@@ -16,7 +16,8 @@ export function forgeProgress(snapshot: ForgeSnapshot) {
   const files = [...new Set(events.flatMap((event) => event.progress?.files ?? []))];
   return {
     activity: `${job.mode === 'replay' ? 'CACHED REPLAY · NO LIVE CODEX' : 'LIVE CODEX'} · ATTEMPT ${job.attempt}/3 · ${job.status.toUpperCase()} · @${job.creator}`,
-    files: files.length ? `Files updated: ${files.join(' · ')}` : 'Waiting for reported file edits.',
+    // Codex can also write files through shell commands, which report no file list; only say "waiting" while it is still working.
+    files: files.length ? `Files updated: ${files.join(' · ')}` : ['building', 'verifying'].includes(job.status) ? 'Waiting for reported file edits.' : '',
     checks: checked?.progress?.checks ?? [],
     gateLabel: checked ? `INDEPENDENT SERVER GATE · ATTEMPT ${checked.progress!.attempt}/3` : 'INDEPENDENT SERVER GATE · WAITING FOR RESULTS',
   };
