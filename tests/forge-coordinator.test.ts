@@ -1,11 +1,30 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ForgeSnapshotSchema } from '../engine/forge-protocol';
-import { harness, verification } from './forge-helpers';
+import { harness, replay, verification } from './forge-helpers';
 import type { ForgeJob } from '../engine/forge-protocol';
 import type { Workspace } from '../server/forge/types';
 
 const request = { creator: 'viewer_one', text: 'A slow fire boss with increasingly fast spirals.' };
 describe('forge state machine', () => {
+  it('keeps every snapshot valid across more than fifty completed rematches and mixed submissions', async () => {
+    const { coordinator } = harness({}, { cooldownMs: 0 });
+    const pending = await coordinator.submit({ ...request, creator: 'still_pending' });
+    const invalid: unknown[] = [];
+    const unsubscribe = coordinator.subscribe((state) => { if (!ForgeSnapshotSchema.safeParse(state).success) invalid.push(state); });
+    for (let index = 0; index < 65; index++) {
+      const rejected = await coordinator.submit(request); await coordinator.review(rejected.id, false);
+      await coordinator.submitRematch({ fightId: `completed-${index}`, previous: replay.spec, generation: 2, stats: null });
+      await coordinator.idle();
+      const fight = coordinator.claimNext(); await coordinator.finishFight(fight.id, 'lost');
+    }
+    expect(invalid).toEqual([]);
+    const state = coordinator.snapshot();
+    expect(state.jobs).toHaveLength(50);
+    expect(state.jobs.find((job) => job.id === pending.id)?.status).toBe('pending');
+    expect(state.jobs.at(-1)?.rematch?.of).toBe('completed-64');
+    expect(ForgeSnapshotSchema.safeParse(state).success).toBe(true);
+    unsubscribe(); await coordinator.close();
+  });
   it('holds local requests for approval and queues only a server-verified boss', async () => {
     const { coordinator, saved } = harness();
     const job = await coordinator.submit(request); await coordinator.idle();

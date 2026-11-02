@@ -64,7 +64,7 @@ export class ForgeCoordinator {
       status: 'waiting', moderation: 'rematch', attempt: 0, threadId: null, createdAt: now, message: 'Rematch Patch requested.', gate: null,
       rematch: { of: input.fightId, previousName: previous.meta.name, generation: input.generation } };
     this.rematchInputs.set(job.id, { previous: structuredClone(previous), generation: input.generation, stats: input.stats });
-    this.state.jobs.push(job);
+    this.addJob(job);
     await this.persist(job);
     this.event(job, 'request', `Rematch Patch: upgrading ${previous.meta.name} to MK ${input.generation}.`);
     this.kick(); return structuredClone(job);
@@ -86,6 +86,15 @@ export class ForgeCoordinator {
     this.saves = task.catch(() => { this.persistenceFailed.add(job.id); });
     return task;
   }
+  private addJob(job: ForgeJob) {
+    this.state.jobs.push(job);
+    while (this.state.jobs.length > 50) {
+      const index = this.state.jobs.findIndex((entry) => ['failed', 'rejected', 'finished'].includes(entry.status));
+      if (index < 0) throw new Error('Active request limit exceeded.');
+      const [removed] = this.state.jobs.splice(index, 1);
+      this.persistenceFailed.delete(removed!.id); this.rematchInputs.delete(removed!.id);
+    }
+  }
 
   async submit(input: unknown, source: ForgeJob['source'] = 'local'): Promise<ForgeJob> {
     if (this.closing) throw new UserError('The forge is shutting down.', 503);
@@ -102,12 +111,7 @@ export class ForgeCoordinator {
     if (this.closing) throw new UserError('The forge is shutting down.', 503);
     const job: ForgeJob = { id: `forge-${this.id()}`, creator, text, source, mode: this.options.mode,
       status: (this.options.autoApprove && moderation === 'api') || source === 'demo' ? 'waiting' : 'pending', moderation, attempt: 0, threadId: null, createdAt: now, message: moderation === 'manual' ? 'No API moderation. Manual approval is required.' : 'Awaiting moderator approval.', gate: null, rematch: null };
-    this.state.jobs.push(job); this.cooldown.set(creator, now);
-    while (this.state.jobs.length > 50) {
-      const index = this.state.jobs.findIndex((entry) => ['failed', 'rejected', 'finished'].includes(entry.status));
-      if (index < 0) break;
-      this.persistenceFailed.delete(this.state.jobs[index]!.id); this.state.jobs.splice(index, 1);
-    }
+    this.addJob(job); this.cooldown.set(creator, now);
     this.state.chat.push({ creator, text: `!boss ${text}`, at: now }); if (this.state.chat.length > 50) this.state.chat.shift();
     await this.persist(job);
     this.event(job, 'request', source === 'demo' ? 'Simulated viewer submitted a boss request.' : 'Viewer request received.');
@@ -145,6 +149,7 @@ export class ForgeCoordinator {
         // Operator console only; provider details never enter public events or the overlay.
         if (!this.closing) console.error(`[forge] ${job.id} failed: ${error instanceof Error ? error.message : String(error)}`);
         job.status = 'failed';
+        this.rematchInputs.delete(job.id);
         this.event(job, 'failed', this.closing ? 'Forge stopped during shutdown; request was not queued.' : 'Forge failed or timed out. No boss was queued. Check local setup and credentials.');
         await this.persist(job).catch(() => {});
       }
