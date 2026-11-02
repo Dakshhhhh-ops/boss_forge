@@ -1,6 +1,6 @@
 import { Codex, type CodexOptions, type Thread, type ThreadOptions } from '@openai/codex-sdk';
 import { mkdir, realpath } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { AgentResultSchema, agentOutputSchema } from '../../engine/forge-protocol';
 import { PROJECT_ROOT } from '../gate/files';
 import type { AgentContext, ForgeAgent, ForgeSession } from './types';
@@ -77,9 +77,14 @@ export class CodexAgent implements ForgeAgent {
         else if (event.type === 'turn.completed') completed = true;
         else if (event.type === 'item.started' || event.type === 'item.completed') {
           const item = event.item;
-          if (item.type === 'file_change') context.emit('writing', 'Codex updated workspace files.');
+          if (item.type === 'file_change' && event.type === 'item.completed') {
+            // Only known artifact names in this workspace may reach the public overlay.
+            const files = [...new Set(item.changes.filter((change) => change.kind !== 'delete').map((change) => relative(context.workspace.directory, resolve(context.workspace.directory, change.path))))]
+              .filter((path): path is 'boss.json' | 'boss.ts' | 'gate-report.json' => ['boss.json', 'boss.ts', 'gate-report.json'].includes(path));
+            if (files.length) context.emit('writing', `Codex ${item.status === 'completed' ? 'wrote' : 'could not write'} ${files.join(', ')}.`, { attempt: context.job.attempt, ...(item.status === 'completed' ? { files } : {}) });
+          }
           else if (item.type === 'command_execution' && event.type === 'item.started') {
-            context.emit(/\bgate\b/.test(item.command) ? 'testing' : 'writing', /\bgate\b/.test(item.command) ? 'Codex is running the local fairness gate.' : 'Codex is working in the boss workspace.');
+            if (/\bgate\b/.test(item.command)) context.emit('testing', 'Codex started its local gate command; server verification follows.');
           } else if (item.type === 'agent_message' && event.type === 'item.completed') final = item.text;
           // Raw reasoning, commands, stdout/stderr and provider errors never enter public events.
         }

@@ -3,6 +3,7 @@ import { createGame, type GameState } from '../../engine/simulation';
 import { drawBoss } from '../play/renderer';
 import { ForgeClient } from '../shared/forge-client';
 import { OverlayShowtime } from './showtime';
+import { CHECK_LABELS, forgeProgress } from './progress';
 
 const show = new OverlayShowtime();
 
@@ -42,8 +43,12 @@ const client = new ForgeClient((snapshot) => {
     const row = node('article', '', 'queue-row'), body = node('div', '');
     body.append(node('h3', boss.spec.meta.name), node('p', `@${boss.spec.meta.creator}`), node('small', `${boss.mode === 'replay' ? 'CACHED REPLAY' : boss.mode === 'house' ? 'HOUSE' : 'LIVE CODEX'} · VERIFIED ${boss.gate.wins}/5`)); row.append(node('span', String(index + 1).padStart(2, '0')), body); return row;
   }) : [node('p', 'The next verified boss lands here.', 'empty')]));
-  const working = snapshot.jobs.find((job) => ['building', 'verifying'].includes(job.status));
-  el('activity').textContent = working ? `${working.mode === 'replay' ? 'Replaying cached work' : 'Codex is building'} for @${working.creator}` : snapshot.jobs.some((job) => job.status === 'pending') ? 'Waiting for moderator approval.' : 'Ready for the next idea.';
+  const progress = forgeProgress(snapshot);
+  el('activity').textContent = progress?.activity ?? (snapshot.jobs.some((job) => job.status === 'pending') ? 'Waiting for moderator approval.' : 'Ready for the next idea.');
+  el('forge-progress').hidden = !progress;
+  el('progress-files').textContent = progress?.files ?? '';
+  el('progress-gate').textContent = progress?.gateLabel ?? '';
+  el('progress-checks').replaceChildren(...(progress?.checks.map((check) => node('li', `${check.passed ? '✓' : '✕'} ${CHECK_LABELS[check.id]}`, check.passed ? 'pass' : 'fail')) ?? []));
   el('ticker').replaceChildren(...snapshot.events.slice(-3).reverse().map((event) => {
     const item = node('li', ''); item.append(node('span', `${event.mode === 'replay' ? 'CACHED' : event.mode.toUpperCase()} / ${event.phase.toUpperCase()}`), document.createTextNode(event.message)); return item;
   }));

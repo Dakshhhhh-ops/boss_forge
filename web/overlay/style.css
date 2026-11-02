@@ -25,3 +25,4 @@
 .queue:has(#show-vote:not([hidden])) .queue-note,.queue:has(#show-vote:not([hidden])) #show-hall{display:none}
 #queue .queue-row:nth-child(n+4){display:none}
 .queue:has(#show-vote:not([hidden])) #queue .queue-row:nth-child(n+3){display:none}
+.ticker{min-height:170px}.ticker-details{min-width:0}.ticker-label p{font-size:13px;line-height:1.6}#progress-files{font:13px 'Courier New',monospace;color:var(--lime);margin:0 0 8px}#progress-gate{font:10px 'Courier New',monospace;color:#b7c4a6;letter-spacing:1px;margin:0 0 8px}#progress-checks{list-style:none;padding:0;margin:0 0 14px;display:flex;flex-wrap:wrap;gap:5px 8px}#progress-checks li{font:11px 'Courier New',monospace;padding:4px 7px;border-radius:3px;border:1px solid var(--line)}#progress-checks .pass{color:var(--lime)}#progress-checks .fail{color:#ffb08a;border-color:#ffb08a66;background:#ffb08a12}.toasts{bottom:290px}.show-announce{bottom:290px}

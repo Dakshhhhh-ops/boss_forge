@@ -4,6 +4,8 @@
 
 A Codex x TwitchCon hackathon project by [ayushagarwalhere](https://github.com/ayushagarwalhere). Viewers will describe bullet-hell bosses; the runtime forge will write code, check fairness, and queue a fight for the streamer.
 
+**[Play the four built-in bosses →](https://ayushagarwalhere.github.io/boss_forge/)** No installation, account, Twitch setup or API key needed. Choose a boss and click **Enter arena**. Keyboard/gamepad supported; autofire is on. This public browser demo uses the house collection. Live Codex generation and Twitch run in the local app below.
+
 ## Current milestone: M5
 
 Four playable house bosses, a deterministic 60 Hz simulation, original procedural art and WebAudio sound, keyboard/gamepad controls, and an independent fairness gate. The Codex forge includes streamed progress, moderation, approvals, three attempts, server revalidation and queued fights. Twitch chat/Channel Points, refunds, highlights and the transparent OBS overlay work alongside an account-free replay demo. Optional generator scripts compile in an isolated interpreter into commands that the same gate and game simulate.
@@ -50,6 +52,14 @@ For live, manually approved local requests, set a key and run `npm run server`. 
 Autofire aims at minions first, then the boss. Losing keyboard/window focus pauses the fight. A retry uses the same seed and difficulty. Changing boss, seed, or difficulty resets the round. The same seed **and the same per-tick inputs** reproduce the fight; aimed patterns respond to where you move. Select Relaxed (75%), Standard (100%), or Intense (125%) for projectile/movement speed and attack cadence. Settings last for the current page session.
 
 The game page accepts input and can be captured in OBS. Add `http://127.0.0.1:8787/overlay/` as a separate **1920×1080 transparent Browser Source** for boss cards, queue, ticker and toasts. It works with account-free demo viewers. Forged cards show the server's report at standard difficulty; changing the difficulty does not certify that new setting.
+
+The overlay shows **attempt 1–3**, allowlisted filenames from completed SDK edits, and individual **independent server gate pass/fail badges**. A revision keeps the previous gate's attempt label until fresh results arrive. Raw commands, output, private reasoning and arbitrary paths are never streamed. Cached demo work remains explicitly labeled.
+
+## Public judge arena
+
+`npm run build:pages` creates the standalone arena in `dist/pages`; `npm run preview:pages` serves it at http://127.0.0.1:4173/boss_forge/. The public build opens directly into the arena, makes no forge API/WebSocket connections, and hides local server controls. It ships only browser code and the four house specs; no environment values or runtime workspaces are published.
+
+GitHub Actions builds, checks and publishes this directory with [.github/workflows/pages.yml](.github/workflows/pages.yml). Pages uses **GitHub Actions** as its source. Pushes to `main` or `codex/m0-setup`, or a manual workflow run, deploy the arena. Details and verification steps: [docs/judge-demo.md](docs/judge-demo.md).
 
 ## Connect Twitch
 

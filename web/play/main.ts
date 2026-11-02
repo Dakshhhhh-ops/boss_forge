@@ -8,6 +8,10 @@ import { ForgeClient } from '../shared/forge-client';
 import { GameSound } from './sound';
 import { createDodger, dodge, type DodgerState } from '../../engine/dodger';
 import { findWinningBot } from './autopilot';
+import { showJudgeMode } from './judge-mode';
+
+const judgeMode = import.meta.env.MODE === 'judges';
+if (judgeMode) showJudgeMode();
 
 function element<T extends HTMLElement>(id: string): T {
   const found = document.getElementById(id);
@@ -63,7 +67,7 @@ houseBosses.forEach((boss, index) => {
   const mark = document.createElement('span'); mark.className = 'boss-choice-mark'; mark.textContent = '↗';
   info.append(name, tag); button.append(icon, info, mark);
   button.addEventListener('click', () => {
-    if (fight) { const old = fight; fight = null; void client.post('finish', { id: old.id, outcome: 'skipped' }).catch(() => {}); }
+    if (fight) { const old = fight; fight = null; void client?.post('finish', { id: old.id, outcome: 'skipped' }).catch(() => {}); }
     selected = index; currentSpec = houseBosses[index]!; origin = `HOUSE BOSS / 0${index + 1}`; verification = ''; reset();
   });
   element('boss-list').append(button); buttons.push(button);
@@ -188,7 +192,7 @@ function frame(milliseconds: number) {
           const won = game.status === 'won';
           showCurtain(won ? 'Forged. Fought. Finished.' : 'One more round?', won ? game.spec.taunts.onDeath : `Defeated by ${game.spec.meta.name}.`, 'Run it back ↗', won ? 'BOSS DEFEATED' : 'YOU WERE DEFEATED');
           hint.textContent = won && fight ? 'Chat can now call a Rematch Patch: !rematch sends this boss back to the forge, harder.' : 'Same seed. Learn the pattern. Make it count.'; pauseButton.disabled = true;
-          if (fight) { const ended = fight; fight = null; void client.post('finish', { id: ended.id, outcome: game.status, stats: fightStats() }).catch(() => { element('game-toast').textContent = 'Fight finished locally. Use the forge console to clear a disconnected fight.'; toastUntil = performance.now() + 5000; }); }
+          if (fight) { const ended = fight; fight = null; void client?.post('finish', { id: ended.id, outcome: game.status, stats: fightStats() }).catch(() => { element('game-toast').textContent = 'Fight finished locally. Use the forge console to clear a disconnected fight.'; toastUntil = performance.now() + 5000; }); }
         }
         accumulator = 0; break;
       }
@@ -205,7 +209,7 @@ function frame(milliseconds: number) {
 canvas.width = ARENA.width; canvas.height = ARENA.height;
 canvas.parentElement?.append(pilotBadge);
 const claimButton = element<HTMLButtonElement>('claim-forged');
-const client = new ForgeClient((state: ForgeSnapshot) => {
+const client = judgeMode ? null : new ForgeClient((state: ForgeSnapshot) => {
   if (fight && state.activeFight?.id !== fight.id) {
     fight = null; lobby = true; paused = false; clearInput(); pauseButton.disabled = true;
     showCurtain('Fight closed.', 'The fight was skipped or finished from the forge. Claim the next boss when ready.', 'Practice this boss ↗', 'ARENA UPDATED');
@@ -221,6 +225,7 @@ const client = new ForgeClient((state: ForgeSnapshot) => {
   element('forge-state').textContent = `${state.mode === 'replay' ? 'CACHED REPLAY · no live Codex' : 'LIVE CODEX'} · ${state.queue.length} queued${state.activeFight ? ' · a fight is active' : ''}.`;
 }, (online) => { if (!online) { claimButton.disabled = true; element('forge-state').textContent = 'House play is available. Start npm run demo to connect the forge.'; } });
 claimButton.addEventListener('click', () => {
+  if (!client) return;
   claimButton.disabled = true;
   void client.claim().then((next) => {
     fight = next; currentSpec = next.boss.spec; seed = next.seed;
@@ -230,7 +235,7 @@ claimButton.addEventListener('click', () => {
     reset(); canvas.focus({ preventScroll: true });
   }).catch((error: unknown) => { element('forge-state').textContent = error instanceof Error ? error.message : 'Cannot claim the next boss.'; claimButton.disabled = false; });
 });
-window.addEventListener('pagehide', () => { client.close(); sound.close(); });
+window.addEventListener('pagehide', () => { client?.close(); sound.close(); });
 reset();
 requestAnimationFrame(frame);
 

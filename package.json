@@ -14,6 +14,8 @@
     "demo": "tsx server/main.ts --demo",
     "demo:record": "tsx scripts/record-demo.ts",
     "build": "tsc --noEmit && vite build",
+    "build:pages": "tsc --noEmit && vite build --mode judges && tsx scripts/prepare-pages.ts",
+    "preview:pages": "vite preview --mode judges --host 127.0.0.1",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.engine.json",
     "test": "vitest run",

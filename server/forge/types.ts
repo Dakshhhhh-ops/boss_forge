@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import type { AgentResultSchema, ForgeEvent, ForgeJob } from '../../engine/forge-protocol';
+import type { AgentResultSchema, ForgeEvent, ForgeJob, ForgeProgress } from '../../engine/forge-protocol';
 import type { BossSpec } from '../../engine/boss-api';
 import type { FightStats } from '../../engine/forge-protocol';
 import type { GateReport } from '../../engine/gate-report';
@@ -9,7 +9,7 @@ export interface Workspace { id: string; directory: string }
 export interface RematchInput { previous: BossSpec; generation: number; stats: FightStats | null; gateWins?: number }
 export interface AgentContext {
   job: ForgeJob; workspace: Workspace; feedback: string | null; signal: AbortSignal; rematch?: RematchInput | null;
-  emit: (phase: ForgeEvent['phase'], message: string) => void;
+  emit: (phase: ForgeEvent['phase'], message: string, progress?: ForgeProgress) => void;
   onThread: (id: string) => void;
 }
 export interface ForgeSession { run(context: AgentContext): Promise<z.infer<typeof AgentResultSchema>> }

@@ -3,3 +3,4 @@
 @media(max-width:760px){.boss-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 .record-line{font:10px 'Courier New',monospace;letter-spacing:1.5px;color:#cbf579;margin:0 0 8px}.showtime-line{font-size:11px;line-height:1.5;color:#e7dcff;background:#2a1d45;border:1px solid #9146ff66;border-radius:6px;padding:9px 11px;margin:0 0 10px}
+.judge-mode .forge-next{display:none}.judge-intro{border:1px solid #c9f57355;border-radius:12px;padding:20px;background:#c9f5730a}.judge-intro h2{font-size:21px;line-height:1.2;margin:12px 0}.judge-intro p:not(.eyebrow){font-size:13px;line-height:1.6;color:#aeb5a6}.judge-intro p:last-child{margin-bottom:0}

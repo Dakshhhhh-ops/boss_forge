@@ -4,7 +4,7 @@ import { join, dirname, resolve, basename } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Codex, type Thread, type ThreadEvent } from '@openai/codex-sdk';
 import { CodexAgent, runtimeCodexOptions, runtimeThreadOptions } from '../server/forge/codex-agent';
-import type { ForgeJob } from '../engine/forge-protocol';
+import type { ForgeJob, ForgeProgress } from '../engine/forge-protocol';
 
 const job: ForgeJob = { id: 'forge-test', creator: 'test_viewer', text: 'A slow fire boss.', source: 'local', mode: 'codex', moderation: 'manual', rematch: null, status: 'building', attempt: 1, threadId: null, createdAt: 0, message: '', gate: null };
 let root: string | null = null;
@@ -42,19 +42,25 @@ describe('verified Codex SDK adapter', () => {
       { type: 'item.completed', item: { id: 'reason', type: 'reasoning', text: 'private-reasoning-marker' } },
       { type: 'item.started', item: { id: 'cmd', type: 'command_execution', command: 'npm run gate -- secret-command-marker', aggregated_output: 'secret-output-marker', status: 'in_progress' } },
       { type: 'item.completed', item: { id: 'patch', type: 'file_change', changes: [{ path: 'boss.json', kind: 'add' }], status: 'completed' } },
+      { type: 'item.completed', item: { id: 'private-patch', type: 'file_change', changes: [{ path: '../secret-path-marker/boss.ts', kind: 'add' }, { path: '.env', kind: 'update' }], status: 'completed' } },
+      { type: 'item.completed', item: { id: 'failed-patch', type: 'file_change', changes: [{ path: 'boss.ts', kind: 'add' }], status: 'failed' } },
+      { type: 'item.completed', item: { id: 'deleted', type: 'file_change', changes: [{ path: 'boss.ts', kind: 'delete' }], status: 'completed' } },
       { type: 'item.completed', item: { id: 'final', type: 'agent_message', text: JSON.stringify({ status: 'ready', summary: 'Done.', files: ['boss.json'] }) } },
       { type: 'turn.completed', usage: { input_tokens: 1, cached_input_tokens: 0, cache_write_input_tokens: 0, output_tokens: 1, reasoning_output_tokens: 0 } },
     ];
     const runStreamed = vi.fn(async () => ({ events: (async function* () { yield* items; })() }));
     const start = vi.spyOn(Codex.prototype, 'startThread').mockReturnValue({ id: 'thread-123', runStreamed } as unknown as Thread);
-    const emitted: string[] = [], threads: string[] = [];
+    const emitted: string[] = [], threads: string[] = [], progress: ForgeProgress[] = [];
     const session = new CodexAgent('test-api-key', undefined, root).createSession();
     const context = { job, workspace: { id: job.id, directory }, feedback: null, signal: new AbortController().signal,
-      emit: (_: string, message: string) => emitted.push(message), onThread: (id: string) => threads.push(id) };
+      emit: (_: string, message: string, detail?: ForgeProgress) => { emitted.push(message); if (detail) progress.push(detail); }, onThread: (id: string) => threads.push(id) };
     expect((await session.run(context)).status).toBe('ready');
     await session.run({ ...context, job: { ...job, attempt: 2 }, feedback: 'safeSpace failed.' });
     expect(start).toHaveBeenCalledTimes(1); expect(runStreamed).toHaveBeenCalledTimes(2); expect(threads).toContain('thread-123');
     expect(JSON.stringify(emitted)).not.toContain('secret-'); expect(JSON.stringify(emitted)).not.toContain('private-reasoning');
+    expect(emitted).toContain('Codex wrote boss.json.');
+    expect(progress.filter((item) => item.files)).toEqual([{ attempt: 1, files: ['boss.json'] }, { attempt: 2, files: ['boss.json'] }]);
+    expect(JSON.stringify(progress)).not.toContain('.env');
     expect(JSON.stringify(runStreamed.mock.calls)).toContain('outputSchema'); expect(JSON.stringify(runStreamed.mock.calls)).toContain('safeSpace');
   });
 });

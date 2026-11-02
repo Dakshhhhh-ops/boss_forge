@@ -42,6 +42,11 @@ describe('forge state machine', () => {
     expect(feedback[0]).toBeNull(); expect(feedback[1]).toContain('safeSpace');
     expect(coordinator.snapshot().queue[0]?.threadId).toBe('sdk-thread-1');
     expect(saved.some((job) => job.threadId === 'sdk-thread-1' && job.status === 'queued')).toBe(true);
+    const results = coordinator.snapshot().events.filter((event) => event.mode === 'server' && event.progress?.checks);
+    expect(results.map((event) => event.progress?.attempt)).toEqual([1, 2]);
+    expect(results[0]?.progress?.checks).toContainEqual({ id: 'safeSpace', passed: false });
+    expect(results[1]?.progress?.checks?.every((check) => check.passed)).toBe(true);
+    expect(ForgeSnapshotSchema.safeParse(coordinator.snapshot()).success).toBe(true);
     await coordinator.close();
   });
 

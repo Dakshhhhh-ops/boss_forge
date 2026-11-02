@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { BossSchema } from './boss-api';
+import { GateReportSchema } from './gate-report';
 
 export const ViewerRequestSchema = z.strictObject({
   creator: z.string().regex(/^[a-z0-9_]{1,25}$/),
@@ -28,10 +29,17 @@ export const ForgeJobSchema = z.strictObject({
   rematch: z.strictObject({ of: z.string().max(64), previousName: z.string().max(24), generation: z.number().int().min(2).max(9) }).nullable().default(null),
 });
 export type ForgeJob = z.infer<typeof ForgeJobSchema>;
+export const ForgeProgressSchema = z.strictObject({
+  attempt: z.number().int().min(1).max(3),
+  files: z.array(z.enum(['boss.json', 'boss.ts', 'gate-report.json'])).max(3).optional(),
+  checks: z.array(GateReportSchema.shape.checks.element.pick({ id: true, passed: true })).max(11).optional(),
+});
+export type ForgeProgress = z.infer<typeof ForgeProgressSchema>;
 export const ForgeEventSchema = z.strictObject({
   seq: z.number().int(), at: z.number(), jobId: z.string(), mode: z.enum(['codex', 'replay', 'server']),
   phase: z.enum(['request', 'review', 'reading', 'writing', 'testing', 'revising', 'verifying', 'queued', 'failed', 'fight']),
   message: z.string().max(300),
+  progress: ForgeProgressSchema.optional(),
 });
 export type ForgeEvent = z.infer<typeof ForgeEventSchema>;
 export const QueuedBossSchema = z.strictObject({

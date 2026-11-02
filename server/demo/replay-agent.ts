@@ -38,6 +38,7 @@ export class ReplayAgent implements ForgeAgent {
         }
         const tuned = tuneForRematch(context.rematch.previous, context.rematch.generation, context.rematch.stats, context.rematch.gateWins);
         await writeFile(join(context.workspace.directory, 'boss.json'), `${JSON.stringify(tuned, null, 2)}\n`);
+        context.emit('writing', 'Cached replay: Offline tuner wrote boss.json.', { attempt: context.job.attempt, files: ['boss.json'] });
         return { status: 'ready', summary: 'Offline rematch tuner (no live Codex). Server must reverify.', files: ['boss.json'] };
       }
       const text = context.job.text.toLowerCase();
@@ -53,6 +54,7 @@ export class ReplayAgent implements ForgeAgent {
           const spec = structuredClone(replay.spec);
           spec.meta.creator = context.job.creator; spec.meta.sourceQuote = context.job.text;
           await writeFile(join(context.workspace.directory, 'boss.json'), `${JSON.stringify(spec, null, 2)}\n`);
+          context.emit('writing', 'Cached replay: copied house template to boss.json.', { attempt: context.job.attempt, files: ['boss.json'] });
         }
       }
       return { status: 'ready', summary: 'Cached house-template replay. No live Codex generation; server must reverify.', files: ['boss.json'] };

@@ -1,5 +1,7 @@
 # Integration verification notes
 
+Checked 2026-11-02 for stream progress: reread the installed SDK 0.166.0 README and `dist/index.d.ts`, and opened the [official SDK guide](https://learn.chatgpt.com/docs/codex-sdk). `item.completed` with `file_change` provides `changes[].path`, `changes[].kind` (`add`, `update`, `delete`) and patch `status` (`completed`, `failed`). The overlay exposes only successful additions/updates of allowlisted workspace artifacts. Server gate badges are produced independently of SDK events. Adapter tests use typed mocked events; this change does not claim a new authenticated live SDK run.
+
 Checked 2026-10-31. M4 implements Twitch with user tokens and EventSub WebSockets. See [twitch.md](twitch.md) for setup, transport decisions, tests and live verification limits; see [forge.md](forge.md) for the SDK sandbox record.
 
 - Codex SDK: installed @openai/codex-sdk 0.166.0; its README and dist/index.d.ts were read before implementation. Thread/runStreamed, outputSchema, AbortSignal, thread IDs, working directories and configuration overrides are verified against those types. Official guide: https://learn.chatgpt.com/docs/codex-sdk . Live mode uses a named workspace-write profile with denied outside reads and no tool networking; provider transport remains separate. Live authentication was not exercised without a key, and native Windows needs supported MXC/elevated isolation. See docs/forge.md.

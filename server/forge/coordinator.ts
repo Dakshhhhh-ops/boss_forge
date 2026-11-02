@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { ViewerRequestSchema, TwitchStateSchema, ToastSchema, ShowtimeSchema, EMPTY_SHOWTIME, type FightStats, type ShowtimeState, type ForgeToast, type TwitchState, type ForgeFight, type ForgeEvent, type ForgeJob, type ForgeMode, type ForgeSnapshot, type QueuedBoss, type GateSummary } from '../../engine/forge-protocol';
+import { ViewerRequestSchema, TwitchStateSchema, ToastSchema, ShowtimeSchema, EMPTY_SHOWTIME, type ForgeProgress, type FightStats, type ShowtimeState, type ForgeToast, type TwitchState, type ForgeFight, type ForgeEvent, type ForgeJob, type ForgeMode, type ForgeSnapshot, type QueuedBoss, type GateSummary } from '../../engine/forge-protocol';
 import { GATE_POLICY } from '../../engine/fairness-policy';
 import type { GateReport } from '../../engine/gate-report';
 import type { ForgeServices, RematchInput } from './types';
@@ -72,8 +72,8 @@ export class ForgeCoordinator {
     if (this.state.toasts.length > 20) this.state.toasts.shift(); this.publish();
   }
   private publish() { for (const listener of this.listeners) listener(this.snapshot()); }
-  private event(job: ForgeJob | null, phase: ForgeEvent['phase'], message: string, mode: ForgeEvent['mode'] = 'server') {
-    this.state.events.push({ seq: ++this.sequence, at: this.now(), jobId: job?.id ?? '', mode, phase, message: message.slice(0, 300) });
+  private event(job: ForgeJob | null, phase: ForgeEvent['phase'], message: string, mode: ForgeEvent['mode'] = 'server', progress?: ForgeProgress) {
+    this.state.events.push({ seq: ++this.sequence, at: this.now(), jobId: job?.id ?? '', mode, phase, message: message.slice(0, 300), ...(progress ? { progress } : {}) });
     if (this.state.events.length > 200) this.state.events.shift();
     if (job) job.message = message.slice(0, 300);
     this.publish();
@@ -150,7 +150,7 @@ export class ForgeCoordinator {
     let lastRejectedHash: string | null = null;
     for (let attempt = 1; attempt <= 3 && !this.closing; attempt++) {
       job.attempt = attempt; job.status = 'building';
-      this.event(job, attempt === 1 ? 'reading' : 'revising', attempt === 1 ? `Starting ${job.mode === 'replay' ? 'cached replay; no live Codex generation' : 'live Codex forge'}.` : `Revision ${attempt}/3: repair the failed gate checks.`, job.mode);
+      this.event(job, attempt === 1 ? 'reading' : 'revising', attempt === 1 ? `Attempt 1/3: starting ${job.mode === 'replay' ? 'cached replay; no live Codex generation' : 'live Codex forge'}.` : `Attempt ${attempt}/3: repairing failed gate checks.`, job.mode, { attempt });
       await this.persist(job);
       this.controller = new AbortController();
       const controller = this.controller;
@@ -159,7 +159,7 @@ export class ForgeCoordinator {
       const aborted = new Promise<never>((_, reject) => { rejectAbort = () => reject(new Error('Forge generation canceled or timed out.')); controller.signal.addEventListener('abort', rejectAbort, { once: true }); });
       try {
         await Promise.race([session.run({ job: structuredClone(job), workspace, feedback, signal: controller.signal, rematch,
-          emit: (phase, message) => { if (!controller.signal.aborted) this.event(job, phase, message, job.mode); },
+          emit: (phase, message, progress) => { if (!controller.signal.aborted) this.event(job, phase, message, job.mode, { ...progress, attempt }); },
           onThread: (id) => { if (!controller.signal.aborted) { job.threadId = id; void this.persist(job).catch(() => {}); } },
         }), aborted]);
       } finally { clearTimeout(timer); controller.signal.removeEventListener('abort', rejectAbort); this.controller = null; }
@@ -169,6 +169,9 @@ export class ForgeCoordinator {
       if (this.closing) throw new Error('Forge closed during verification.');
       const report = verified.report;
       job.gate = report.specHash ? gateSummary(report) : null;
+      // These checks come exclusively from the independent server gate, never agent stdout or claims.
+      const checks = report.checks.map(({ id, passed }) => ({ id, passed }));
+      this.event(job, 'verifying', `Attempt ${attempt}/3: server gate ${report.passed ? 'passed' : 'failed'} ${checks.filter((check) => check.passed).length}/${checks.length} checks. ${report.summary}`, 'server', { attempt, checks });
       if (report.passed && verified.spec) {
         if (lastRejectedHash === report.specHash) throw new Error('An unchanged rejected boss needs a real revision.');
         await this.saves;
