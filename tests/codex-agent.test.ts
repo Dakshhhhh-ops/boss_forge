@@ -6,7 +6,7 @@ import { Codex, type Thread, type ThreadEvent } from '@openai/codex-sdk';
 import { CodexAgent, runtimeCodexOptions, runtimeThreadOptions } from '../server/forge/codex-agent';
 import type { ForgeJob } from '../engine/forge-protocol';
 
-const job: ForgeJob = { id: 'forge-test', creator: 'test_viewer', text: 'A slow fire boss.', source: 'local', mode: 'codex', moderation: 'manual', status: 'building', attempt: 1, threadId: null, createdAt: 0, message: '', gate: null };
+const job: ForgeJob = { id: 'forge-test', creator: 'test_viewer', text: 'A slow fire boss.', source: 'local', mode: 'codex', moderation: 'manual', rematch: null, status: 'building', attempt: 1, threadId: null, createdAt: 0, message: '', gate: null };
 let root: string | null = null;
 afterEach(async () => {
   vi.restoreAllMocks();
@@ -23,6 +23,9 @@ describe('verified Codex SDK adapter', () => {
     expect(options.configOverrides?.[0]).toContain('":root" = "deny"');
     expect(options.configOverrides?.[0]).toContain('"/workspace/job" = "write"');
     expect(options.configOverrides?.[0]).toContain('gate.mjs');
+    for (const hidden of ['.codex', '.agents', '.git', '.aws']) expect(options.configOverrides?.[0]).toContain(`${JSON.stringify(join('/workspace/job', hidden))} = "deny"`);
+    const withTools = runtimeCodexOptions('/workspace/job', '/workspace/home', '/runtime/node', 'test-api-key', ['/runtime/codex']);
+    expect(withTools.configOverrides?.[0]).toContain('"/runtime/codex" = "read"');
     expect(JSON.stringify(options.config)).toContain('"enabled":false');
     if (process.platform === 'win32') {
       expect(JSON.stringify(options.config)).toContain('"prefer_mxc":true');
