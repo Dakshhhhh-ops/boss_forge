@@ -2,7 +2,7 @@
 
 Copy-ready text for the Codex x TwitchCon hackathon form. Fill in the Codex session ID before submitting.
 
-- **Video:** https://youtu.be/-oCtr_W_qoo
+- **Video:** https://youtu.be/tozHcmMYQf4
 - **Codex session ID (main build thread, from `/status`):** `<session id>`
 - **Repo:** https://github.com/ayushagarwalhere/boss_forge
 - **Play now (no install):** https://ayushagarwalhere.github.io/boss_forge/
