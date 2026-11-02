@@ -84,7 +84,7 @@ export const VoteSchema = z.strictObject({
 export type ForgeVote = z.infer<typeof VoteSchema>;
 export const RematchWindowSchema = z.strictObject({
   fightId: z.string(), boss: z.string().max(24), nextName: z.string().max(24), creator: z.string(), generation: z.number().int().min(1).max(9),
-  endsAt: z.number(), votes: z.number().int().min(0), needed: z.number().int().min(1), status: z.enum(['open', 'forging', 'queued', 'failed', 'expired']), message: z.string().max(200),
+  endsAt: z.number(), votes: z.number().int().min(0), needed: z.number().int().min(1), status: z.enum(['open', 'waiting', 'forging', 'queued', 'failed', 'expired']), message: z.string().max(200),
 });
 export type RematchWindow = z.infer<typeof RematchWindowSchema>;
 export const ShowtimeSchema = z.strictObject({

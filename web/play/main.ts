@@ -215,7 +215,7 @@ const client = judgeMode ? null : new ForgeClient((state: ForgeSnapshot) => {
     showCurtain('Fight closed.', 'The fight was skipped or finished from the forge. Claim the next boss when ready.', 'Practice this boss ↗', 'ARENA UPDATED');
   }
   const show = state.showtime;
-  const showLine = show.rematch && ['open', 'forging'].includes(show.rematch.status) ? `Rematch: ${show.rematch.message}`
+  const showLine = show.rematch && ['open', 'waiting', 'forging'].includes(show.rematch.status) ? `Rematch: ${show.rematch.message}`
     : show.vote && !show.vote.closed ? `Chat is voting: ${show.vote.options.map((option, i) => `${i + 1}. ${option.name} (${option.votes})`).join(' · ')}` : '';
   element('showtime-line').textContent = showLine;
   element('showtime-line').hidden = !showLine;

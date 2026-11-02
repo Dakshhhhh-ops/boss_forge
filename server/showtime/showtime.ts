@@ -121,7 +121,7 @@ export class Showtime {
   /** A viewer (or the streamer from the console) asks for the rematch. Returns a chat reply or null. */
   async rematchVote(login: string, privileged: boolean): Promise<string | null> {
     const window = this.state.rematch, pending = this.pending;
-    if (!window || !pending || window.status !== 'open') return window?.status === 'forging' ? 'The rematch is already in the forge.' : null;
+    if (!window || !pending || window.status !== 'open') return window?.status === 'waiting' ? 'The rematch is waiting for forge capacity.' : window?.status === 'forging' ? 'The rematch is already in the forge.' : null;
     const decisive = privileged || login === window.creator;
     pending.voters.add(login);
     window.votes = pending.voters.size;
@@ -135,12 +135,13 @@ export class Showtime {
     if (!window || !pending) return;
     this.pending = null;
     const next = pending.generation + 1, name = rematchName(window.boss, next);
-    this.state.rematch = { ...window, status: 'forging', message: `${reason} ${this.coordinator.snapshot().mode === 'replay' ? 'Offline tuner (no live Codex)' : 'Codex'} is building ${name}; the gate decides.` };
+    this.state.rematch = { ...window, status: 'waiting', message: `${reason} ${name} is waiting for the priority forge slot.` };
     this.announce(`⚒️ ${reason} ${window.boss} goes back to the forge as ${name}. It still has to pass the fairness gate.`);
     this.publish();
     try {
       const job = await this.coordinator.submitRematch({ fightId: window.fightId, previous: pending.fight.boss.spec, generation: next, stats: pending.stats, gateWins: pending.fight.boss.gate.wins });
       this.rematchJobId = job.id;
+      this.trackRematch(this.coordinator.snapshot());
     } catch (error) {
       this.state.rematch = { ...this.state.rematch!, status: 'failed', message: error instanceof UserError ? error.message : 'The rematch could not start.' };
       this.publish();
@@ -149,9 +150,18 @@ export class Showtime {
 
   private trackRematch(snapshot: ForgeSnapshot) {
     const window = this.state.rematch;
-    if (!window || window.status !== 'forging' || !this.rematchJobId) return;
+    if (!window || !['waiting', 'forging'].includes(window.status) || !this.rematchJobId) return;
     const job = snapshot.jobs.find((entry) => entry.id === this.rematchJobId);
-    if (!job || !['queued', 'failed', 'rejected'].includes(job.status)) return;
+    if (!job) return;
+    if (['waiting', 'building', 'verifying'].includes(job.status)) {
+      const status = job.status === 'waiting' ? 'waiting' : 'forging';
+      const message = status === 'waiting'
+        ? snapshot.queue.length >= 5 ? 'Waiting for a queue slot. Claim the next boss to make room.' : 'Waiting for the current forge job; the next slot is reserved for this rematch.'
+        : `${job.mode === 'replay' ? 'Offline tuner (no live Codex)' : 'Codex'} is ${job.status === 'verifying' ? 'awaiting server verification for' : 'building'} ${window.nextName}; the gate decides.`;
+      if (window.status !== status || window.message !== message) { this.state.rematch = { ...window, status, message }; this.publish(); }
+      return;
+    }
+    if (!['queued', 'failed', 'rejected'].includes(job.status)) return;
     const fightId = window.fightId;
     if (job.status === 'queued') {
       this.votedIntermission = this.intermission; // the rematch is chat's pick for this break
@@ -224,7 +234,7 @@ export class Showtime {
     this.trackRematch(snapshot);
     if (snapshot.activeFight && this.state.vote?.closed) { this.state.vote = null; this.publish(); }
     const autoVote = this.options.autoVote ?? true;
-    const rematchBusy = this.state.rematch && ['open', 'forging', 'queued'].includes(this.state.rematch.status);
+    const rematchBusy = this.state.rematch && ['open', 'waiting', 'forging', 'queued'].includes(this.state.rematch.status);
     if (autoVote && !snapshot.activeFight && !this.state.vote && !rematchBusy && snapshot.queue.length >= 2 && this.votedIntermission !== this.intermission) {
       try { this.startVote(); } catch { /* conditions changed; try again on the next snapshot */ }
     }

@@ -36,7 +36,7 @@ export class OverlayShowtime {
     const key = `${rematch.fightId}:${rematch.status}:${rematch.votes}`;
     if (key !== this.keys.rematch) {
       this.keys.rematch = key;
-      const title = rematch.status === 'open' ? 'REMATCH?' : rematch.status === 'forging' ? 'REMATCH PATCH IN THE FORGE' : rematch.status === 'queued' ? 'REMATCH READY' : 'REMATCH REJECTED';
+      const title = rematch.status === 'open' ? 'REMATCH?' : rematch.status === 'waiting' ? 'REMATCH WAITING FOR CAPACITY' : rematch.status === 'forging' ? 'REMATCH PATCH IN THE FORGE' : rematch.status === 'queued' ? 'REMATCH READY' : 'REMATCH REJECTED';
       const meter = node('div', '', 'show-meter'), fill = node('i', '');
       fill.style.transform = `scaleX(${Math.min(1, rematch.votes / rematch.needed)})`; meter.append(fill);
       box.replaceChildren(node('p', title, 'eyebrow'), node('h2', `${rematch.boss} → ${rematch.nextName.replace(rematch.boss.replace(/\s+MK\s+[IVX]+$/i, ''), '').trim() || rematch.nextName}`), node('p', rematch.status === 'open' ? `Type !rematch · ${rematch.votes}/${rematch.needed} · or @${rematch.creator} calls it` : rematch.message, 'show-sub'), ...(rematch.status === 'open' ? [meter, node('span', '', 'show-count')] : []));

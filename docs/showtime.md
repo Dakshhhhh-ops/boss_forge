@@ -1,5 +1,7 @@
 # The stream show: Rematch Patch, chat polls and Hall of Fame
 
+The queue holds four ordinary bosses and reserves its fifth slot for a priority rematch. Rematches still pass the same gate and jump to the front. If a previous rematch occupies that slot or another job is running, the console/arena/overlay show **waiting** until work actually starts; claiming the next queued fight releases capacity. No verified boss is dropped to make room.
+
 Boss Forge's core loop is: chat designs a boss, Codex builds it, the gate proves it's fair, and the streamer fights it. The *show* layer gives chat a reason to keep playing after each fight. It sits on top of the forge (`server/showtime/`) and never bypasses moderation, approval or the fairness gate.
 
 | Feature | Chat | What happens |

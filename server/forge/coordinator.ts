@@ -11,6 +11,9 @@ export function gateSummary(report: GateReport): GateSummary {
     wins: report.metrics.wins, safeFraction: report.metrics.minSafeFraction, ttkSeconds: report.metrics.estimatedTtkSeconds, errors: report.metrics.exceptions };
 }
 type Options = { mode: ForgeMode; demo: boolean; autoApprove: boolean; moderationMode?: 'api' | 'manual'; attemptTimeoutMs?: number; cooldownMs?: number; now?: () => number; id?: () => string };
+// Keep the fifth verified queue slot available for a priority rematch.
+const NORMAL_QUEUE_LIMIT = 4;
+const QUEUE_LIMIT = 5;
 
 export class ForgeCoordinator {
   private readonly state: ForgeSnapshot;
@@ -125,13 +128,18 @@ export class ForgeCoordinator {
     if (this.closing || this.task) return;
     this.task = this.drain().finally(() => {
       this.task = null;
-      if (!this.closing && this.state.queue.length < 5 && this.state.jobs.some((job) => job.status === 'waiting')) this.kick();
+      if (!this.closing && this.nextJob()) this.kick();
     });
   }
+  private nextJob() {
+    if (this.state.queue.length >= QUEUE_LIMIT) return undefined;
+    const rematch = this.state.jobs.find((job) => job.status === 'waiting' && job.rematch);
+    return rematch ?? (this.state.queue.length < NORMAL_QUEUE_LIMIT ? this.state.jobs.find((job) => job.status === 'waiting') : undefined);
+  }
   private async drain() {
-    while (!this.closing && this.state.queue.length < 5) {
+    while (!this.closing) {
       // Rematch upgrades jump ahead of new ideas: the streamer and chat are waiting on them.
-      const job = this.state.jobs.find((entry) => entry.status === 'waiting' && entry.rematch) ?? this.state.jobs.find((entry) => entry.status === 'waiting'); if (!job) return;
+      const job = this.nextJob(); if (!job) return;
       try { await this.forge(job); }
       catch (error) {
         // Operator console only; provider details never enter public events or the overlay.

@@ -115,6 +115,37 @@ describe('Rematch Patch naming, brief and offline tuner', () => {
 });
 
 describe('Showtime: recaps, rematch window, and chat polls', () => {
+  it('reserves capacity for a rematch while ordinary requests keep arriving', async () => {
+    const { coordinator, showtime, fight } = await setup();
+    for (let i = 0; i < 6; i++) await coordinator.submit({ creator: `viewer_${i}`, text: 'A slow original fire boss.' });
+    await coordinator.idle(); expect(coordinator.snapshot().queue).toHaveLength(4);
+    await fight('won'); await coordinator.idle();
+    expect(coordinator.snapshot().queue).toHaveLength(4);
+    await showtime.rematchVote('moderator', true); await coordinator.idle();
+    const state = coordinator.snapshot();
+    expect(state.queue).toHaveLength(5);
+    expect(state.queue[0]?.jobId).toBe(state.jobs.find((job) => job.rematch)?.id);
+    expect(state.showtime.rematch?.status).toBe('queued');
+    expect(ForgeSnapshotSchema.safeParse(state).success).toBe(true);
+    await showtime.close(); await coordinator.close();
+  });
+
+  it('shows waiting when a previous rematch occupies the reserved slot, then resumes', async () => {
+    const { coordinator, showtime, fight } = await setup();
+    for (let i = 0; i < 6; i++) await coordinator.submit({ creator: `viewer_${i}`, text: 'A slow original fire boss.' });
+    await coordinator.idle(); await fight('won'); await coordinator.idle();
+    await coordinator.submitRematch({ fightId: 'prior-fight', previous: replay.spec, generation: 2, stats: null });
+    await coordinator.idle(); expect(coordinator.snapshot().queue).toHaveLength(5);
+    await showtime.rematchVote('moderator', true);
+    const waiting = coordinator.snapshot();
+    expect(waiting.showtime.rematch).toMatchObject({ status: 'waiting', message: expect.stringContaining('Claim the next boss') });
+    expect(waiting.jobs.at(-1)).toMatchObject({ attempt: 0, status: 'waiting' });
+    expect(await showtime.rematchVote('another_viewer', false)).toContain('waiting');
+    coordinator.claimNext(); await coordinator.idle();
+    expect(coordinator.snapshot().showtime.rematch?.status).toBe('queued');
+    expect(coordinator.snapshot().queue).toHaveLength(5);
+    await showtime.close(); await coordinator.close();
+  });
   it('records a win, opens a rematch window, and forges the upgrade to the front of the queue after enough votes', async () => {
     const { coordinator, showtime, announced, fight } = await setup();
     const won = await fight('won');

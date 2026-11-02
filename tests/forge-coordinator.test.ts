@@ -82,10 +82,10 @@ describe('forge state machine', () => {
   it('bounds the queue and refills while the current fight is in progress', async () => {
     const { coordinator } = harness({}, { autoApprove: true });
     for (let index = 0; index < 7; index++) await coordinator.submit({ ...request, creator: `viewer_${index}` });
-    await coordinator.idle(); expect(coordinator.snapshot().queue).toHaveLength(5);
-    expect(coordinator.snapshot().jobs.filter((job) => job.status === 'waiting')).toHaveLength(2);
+    await coordinator.idle(); expect(coordinator.snapshot().queue).toHaveLength(4);
+    expect(coordinator.snapshot().jobs.filter((job) => job.status === 'waiting')).toHaveLength(3);
     const fight = coordinator.claimNext(); await coordinator.idle();
-    expect(coordinator.snapshot().queue).toHaveLength(5); expect(coordinator.snapshot().activeFight?.id).toBe(fight.id);
+    expect(coordinator.snapshot().queue).toHaveLength(4); expect(coordinator.snapshot().activeFight?.id).toBe(fight.id);
     expect(() => coordinator.claimNext()).toThrow('already active');
     await coordinator.finishFight(fight.id, 'won'); await coordinator.finishFight(fight.id, 'won');
     expect(coordinator.snapshot().activeFight).toBeNull();
