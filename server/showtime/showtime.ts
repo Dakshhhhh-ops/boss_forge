@@ -202,7 +202,8 @@ export class Showtime {
     vote.closed = true; vote.winner = winner;
     const chosen = vote.options[winner]!, total = vote.options.reduce((sum, option) => sum + option.votes, 0);
     const promoted = this.coordinator.promote(chosen.queueId);
-    this.announce(promoted ? `🗳️ Chat picked ${chosen.name} by @${chosen.creator} (${chosen.votes}/${total} votes). It fights next!` : `🗳️ Vote closed, but ${chosen.name} already left the queue.`);
+    const picked = total ? `🗳️ Chat picked ${chosen.name} by @${chosen.creator} (${chosen.votes}/${total} votes). It fights next!` : `🗳️ No votes this round, so ${chosen.name} by @${chosen.creator} fights next.`;
+    this.announce(promoted ? picked : `🗳️ Vote closed, but ${chosen.name} already left the queue.`);
     const id = vote.id;
     this.later(() => { if (this.state.vote?.id === id) { this.state.vote = null; this.publish(); } }, 15000);
     this.publish();

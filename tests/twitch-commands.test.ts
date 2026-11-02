@@ -70,6 +70,20 @@ describe('Twitch chat commands', () => {
     expect(coordinator.snapshot().jobs.find((entry) => entry.id === second.id)?.status).toBe('rejected');
     await coordinator.close();
   });
+  it('lets a moderator approve several requests in a row, and approve right after submitting an idea', async () => {
+    const { coordinator } = harness(); const say = vi.fn(async () => {}); const now = 100;
+    const commands = new ChatCommands(coordinator, '1', '2', say, () => now);
+    const streamer = (text: string, id: string) => commands.accept({ ...chat(text, id), chatter_user_id: '1', chatter_user_login: 'streamer' });
+    await streamer('!boss a slow fire boss with rings', 'own-idea');
+    await coordinator.submit({ creator: 'viewer_b', text: 'A heavy boss with rings' }, 'twitch');
+    await streamer('!approve', 'a1'); await streamer('!reject', 'a2');
+    const statuses = coordinator.snapshot().jobs.map((job) => job.status);
+    expect(statuses[0]).not.toBe('pending'); expect(statuses[1]).toBe('rejected');
+    // Ordinary commands keep the per-user reply limit.
+    await commands.accept(chat('!queue', 'q1')); await commands.accept(chat('!boss another idea', 'q2'));
+    expect(coordinator.snapshot().jobs).toHaveLength(2);
+    await coordinator.close();
+  });
 });
 
 describe('Channel Points settlement', () => {

@@ -74,9 +74,13 @@ export class ChatCommands {
     const privileged = event.chatter_user_id === this.broadcasterId || event.badges.some((badge) => badge.set_id === 'moderator');
     if (['approve', 'reject', 'skip', 'startvote'].includes(command) && !privileged) return;
     if (['vote', 'rematch', 'top', 'record', 'mybosses', 'startvote'].includes(command)) { await this.showtimeCommand(command, argument, event.chatter_user_login, privileged, now); return; }
-    for (const [id, at] of this.replies) if (now - at > 10000) this.replies.delete(id);
-    if (this.replies.has(event.chatter_user_id) || this.replies.size >= 1000) return;
-    this.replies.set(event.chatter_user_id, now);
+    // Moderator actions are privileged-only, so they skip the per-user reply limiter: a mod must be able to
+    // approve several requests in a row, or approve right after submitting their own idea.
+    if (!['approve', 'reject', 'skip'].includes(command)) {
+      for (const [id, at] of this.replies) if (now - at > 10000) this.replies.delete(id);
+      if (this.replies.has(event.chatter_user_id) || this.replies.size >= 1000) return;
+      this.replies.set(event.chatter_user_id, now);
+    }
     try {
       if (command === 'boss') {
         const job = await this.coordinator.submit({ creator: event.chatter_user_login, text: argument }, 'twitch');

@@ -54,10 +54,11 @@ Codex is in two layers.
 - **Safety on a live stream.** Viewer text is adversarial. We kept it as data all the way through: moderation runs before intake, approval is manual by default, Codex can only touch an isolated workspace with read-only protected inputs, and the gate runs on the server, outside Codex's reach.
 - **"Fair" had to be measurable.** We replaced "looks fine" with a reproducible bot-based gate, deterministic seeds and recorded reports.
 - **Live platform edge cases.** These included refunds when a forge fails, deduplicating EventSub deliveries and handling reconnect handoffs. During our live test we also found that using one Twitch account as both broadcaster and bot made the bot ignore the streamer's own commands, and fixed it.
+- **A sandbox that really holds.** Codex runs with outside reads denied. On Linux that first blocked Codex from re-launching itself inside the sandbox; we granted read-only access to just its own package and verified that the workspace stays writable while secrets and everything outside stay unreadable.
 
 ## Accomplishments we're proud of
 
-- A full loop that works on a real Twitch channel: chat message, Codex, gate, overlay, fight, rematch.
+- A full loop that works on a real Twitch channel: chat message, live Codex, gate, overlay, fight, rematch. A typical live forge takes about a minute.
 - An account-free `npm run demo` that runs the whole show with clearly labeled simulated viewers and cached replays.
 - 160+ automated tests, covering OAuth ownership, refunds, reconnects, sandbox escapes and gate policy.
 

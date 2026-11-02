@@ -85,3 +85,12 @@ Running the forge inside WSL2 (Ubuntu) uses the Linux sandbox (bubblewrap), whic
 2. Keep the checkout on the Linux filesystem (for example `~/boss_forge`), not under `/mnt/c`, and run `npm ci` there so the Linux Codex binary is installed.
 3. Copy `.env.local` with your keys and Twitch tokens into that checkout, then run `npm run build && npm run server`.
 4. Open `http://127.0.0.1:8787/` from Windows; WSL2 forwards localhost by default. Run only one server per Twitch reward.
+
+Verified live under WSL2 with `@openai/codex-sdk@0.166.0`: a chat request was forged by Codex and passed the server gate in about 70 seconds. Inside the sandbox, Codex could read and write its workspace, and was blocked from reading outside it, from the project's `.env.local`, and from the hidden `.codex`/`.agents`/`.git`/`.aws` paths.
+
+Two Linux sandbox details the adapter handles:
+
+- bubblewrap cannot mask a denied path that does not exist yet, so the adapter creates those hidden paths as empty folders before the thread starts. They stay denied.
+- The sandbox re-executes the Codex binary inside bubblewrap, so the installed `node_modules/@openai` packages are granted read-only access. Without that, every command fails before it runs.
+
+Forge failures print a one-line reason to the server console only; it never reaches chat or the overlay.

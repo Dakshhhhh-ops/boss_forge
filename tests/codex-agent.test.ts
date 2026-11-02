@@ -23,6 +23,9 @@ describe('verified Codex SDK adapter', () => {
     expect(options.configOverrides?.[0]).toContain('":root" = "deny"');
     expect(options.configOverrides?.[0]).toContain('"/workspace/job" = "write"');
     expect(options.configOverrides?.[0]).toContain('gate.mjs');
+    for (const hidden of ['.codex', '.agents', '.git', '.aws']) expect(options.configOverrides?.[0]).toContain(`${JSON.stringify(join('/workspace/job', hidden))} = "deny"`);
+    const withTools = runtimeCodexOptions('/workspace/job', '/workspace/home', '/runtime/node', 'test-api-key', ['/runtime/codex']);
+    expect(withTools.configOverrides?.[0]).toContain('"/runtime/codex" = "read"');
     expect(JSON.stringify(options.config)).toContain('"enabled":false');
     if (process.platform === 'win32') {
       expect(JSON.stringify(options.config)).toContain('"prefer_mxc":true');

@@ -133,7 +133,9 @@ export class ForgeCoordinator {
       // Rematch upgrades jump ahead of new ideas: the streamer and chat are waiting on them.
       const job = this.state.jobs.find((entry) => entry.status === 'waiting' && entry.rematch) ?? this.state.jobs.find((entry) => entry.status === 'waiting'); if (!job) return;
       try { await this.forge(job); }
-      catch {
+      catch (error) {
+        // Operator console only; provider details never enter public events or the overlay.
+        if (!this.closing) console.error(`[forge] ${job.id} failed: ${error instanceof Error ? error.message : String(error)}`);
         job.status = 'failed';
         this.event(job, 'failed', this.closing ? 'Forge stopped during shutdown; request was not queued.' : 'Forge failed or timed out. No boss was queued. Check local setup and credentials.');
         await this.persist(job).catch(() => {});
