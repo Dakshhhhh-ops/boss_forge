@@ -3,6 +3,8 @@ import { ViewerRequestSchema, TwitchStateSchema, ToastSchema, ShowtimeSchema, EM
 import { GATE_POLICY } from '../../engine/fairness-policy';
 import type { GateReport } from '../../engine/gate-report';
 import type { ForgeServices, RematchInput } from './types';
+import type { ForgeCheckpoint } from './recovery';
+import { restoreForge } from './restore';
 
 export class UserError extends Error { constructor(message: string, readonly status = 400) { super(message); } }
 export function gateSummary(report: GateReport): GateSummary {
@@ -26,6 +28,8 @@ export class ForgeCoordinator {
   private task: Promise<void> | null = null;
   private controller: AbortController | null = null;
   private saves = Promise.resolve();
+  private checkpoints = Promise.resolve();
+  private readonly staging = new Set<string>();
   private persistenceFailed = new Set<string>();
   private closing = false;
   private sequence = 0;
@@ -42,7 +46,33 @@ export class ForgeCoordinator {
       twitch: { status: options.demo ? 'demo' : 'off', channel: null, reward: 'off', message: options.demo ? 'Simulated viewers. Twitch is disconnected.' : 'Twitch is disabled. Local requests are available.' } };
   }
 
-  snapshot() { return structuredClone(this.state); }
+  snapshot() {
+    const state = structuredClone(this.state);
+    state.queue = state.queue.filter((boss) => !this.staging.has(boss.id));
+    for (const job of state.jobs) if (this.staging.has(job.id)) job.status = 'verifying';
+    return state;
+  }
+  async restore(checkpoint: ForgeCheckpoint | null) {
+    if (!checkpoint) return;
+    if (this.state.jobs.length || this.state.activeFight || this.state.queue.length || !this.services.reverify) throw new Error('Recovery requires an empty coordinator and a fresh gate.');
+    const restored = await restoreForge(checkpoint, this.services.reverify);
+    this.state.jobs = restored.jobs; this.state.queue = restored.queue; this.state.activeFight = restored.activeFight;
+    this.round = restored.round; this.completedFights.push(...restored.completedFights);
+    await this.saveCheckpoint();
+    this.notify(`Recovered ${restored.queue.length} queued bosses${restored.activeFight ? ' and an interrupted fight (resume from the same seed)' : ''} after fresh server verification.`, 'info');
+  }
+  private saveCheckpoint() {
+    if (!this.services.checkpoint) return Promise.resolve();
+    const checkpoint = structuredClone({ jobs: this.state.jobs, queue: this.state.queue, activeFight: this.state.activeFight, round: this.round, completedFights: this.completedFights });
+    const task = this.checkpoints.catch(() => {}).then(() => this.services.checkpoint!(checkpoint));
+    this.checkpoints = task; void task.catch(() => {});
+    return task;
+  }
+  /** Settlement and HTTP controls wait until the latest queue/fight state is safely written. */
+  async durable() { await this.saves; await this.checkpoints; }
+  private checkpointControl() {
+    void this.saveCheckpoint().catch(() => this.notify('Queue recovery could not be saved. Channel Points settlement is paused until storage recovers.', 'warning'));
+  }
   subscribe(listener: (state: ForgeSnapshot) => void) { this.listeners.add(listener); return () => this.listeners.delete(listener); }
   onFightFinished(listener: (fight: ForgeFight, outcome: 'won' | 'lost' | 'skipped', stats: FightStats | null) => void) { this.fightListeners.add(listener); return () => this.fightListeners.delete(listener); }
   setShowtime(state: ShowtimeState) { this.state.showtime = ShowtimeSchema.parse(state); this.publish(); }
@@ -52,7 +82,7 @@ export class ForgeCoordinator {
   promote(queueId: string) {
     const index = this.state.queue.findIndex((boss) => boss.id === queueId);
     if (index <= 0) return index === 0;
-    const [boss] = this.state.queue.splice(index, 1); this.state.queue.unshift(boss!); this.publish(); return true;
+    const [boss] = this.state.queue.splice(index, 1); this.state.queue.unshift(boss!); this.checkpointControl(); this.publish(); return true;
   }
   /** Rematch Patch: queue an upgrade of a boss the streamer just beat. Its text was admitted with the original boss. */
   async submitRematch(input: RematchInput & { fightId: string }): Promise<ForgeJob> {
@@ -82,7 +112,7 @@ export class ForgeCoordinator {
     this.publish();
   }
   private persist(job: ForgeJob) {
-    const copy = structuredClone(job), task = this.saves.then(() => this.services.save(copy));
+    const copy = structuredClone(job), task = this.saves.then(async () => { await this.services.save(copy); await this.saveCheckpoint(); });
     this.saves = task.catch(() => { this.persistenceFailed.add(job.id); });
     return task;
   }
@@ -96,7 +126,7 @@ export class ForgeCoordinator {
     }
   }
 
-  async submit(input: unknown, source: ForgeJob['source'] = 'local'): Promise<ForgeJob> {
+  async submit(input: unknown, source: ForgeJob['source'] = 'local', admit?: (jobId: string) => Promise<void>): Promise<ForgeJob> {
     if (this.closing) throw new UserError('The forge is shutting down.', 503);
     const parsed = ViewerRequestSchema.safeParse(input);
     if (!parsed.success) throw new UserError('Use a lowercase Twitch login and a 5–1000 character boss description.');
@@ -111,6 +141,10 @@ export class ForgeCoordinator {
     if (this.closing) throw new UserError('The forge is shutting down.', 503);
     const job: ForgeJob = { id: `forge-${this.id()}`, creator, text, source, mode: this.options.mode,
       status: (this.options.autoApprove && moderation === 'api') || source === 'demo' ? 'waiting' : 'pending', moderation, attempt: 0, threadId: null, createdAt: now, message: moderation === 'manual' ? 'No API moderation. Manual approval is required.' : 'Awaiting moderator approval.', gate: null, rematch: null };
+    // Persist a redemption's job linkage before this job is eligible for generation or settlement.
+    if (admit) await admit(job.id);
+    if (this.closing) throw new UserError('The forge is shutting down.', 503);
+    if (this.intakeCount + this.state.jobs.filter((entry) => !['failed', 'rejected', 'finished'].includes(entry.status)).length >= 10) throw new UserError('The forge is full. Try again after a fight.', 429);
     this.addJob(job); this.cooldown.set(creator, now);
     this.state.chat.push({ creator, text: `!boss ${text}`, at: now }); if (this.state.chat.length > 50) this.state.chat.shift();
     await this.persist(job);
@@ -149,6 +183,8 @@ export class ForgeCoordinator {
         // Operator console only; provider details never enter public events or the overlay.
         if (!this.closing) console.error(`[forge] ${job.id} failed: ${error instanceof Error ? error.message : String(error)}`);
         job.status = 'failed';
+        this.state.queue = this.state.queue.filter((boss) => !this.staging.has(boss.id));
+        this.staging.delete(job.id);
         this.rematchInputs.delete(job.id);
         this.event(job, 'failed', this.closing ? 'Forge stopped during shutdown; request was not queued.' : 'Forge failed or timed out. No boss was queued. Check local setup and credentials.');
         await this.persist(job).catch(() => {});
@@ -189,9 +225,12 @@ export class ForgeCoordinator {
         if (lastRejectedHash === report.specHash) throw new Error('An unchanged rejected boss needs a real revision.');
         await this.saves;
         if (this.persistenceFailed.has(job.id)) throw new Error('Request metadata could not be saved.');
+        this.staging.add(job.id);
         job.status = 'queued'; job.message = report.summary; await this.persist(job);
         const entry = { id: job.id, jobId: job.id, mode: job.mode, threadId: job.threadId, spec: structuredClone(verified.spec), gate: gateSummary(report) };
         if (job.rematch) this.state.queue.unshift(entry); else this.state.queue.push(entry);
+        await this.saveCheckpoint();
+        this.staging.delete(job.id);
         this.rematchInputs.delete(job.id);
         this.event(job, 'queued', job.rematch ? `Rematch Patch passed the gate: ${verified.spec.meta.name} fights next. ${report.summary}` : report.summary); return;
       }
@@ -207,10 +246,17 @@ export class ForgeCoordinator {
   }
 
   claimNext() {
+    if (this.state.activeFight?.resumable) {
+      this.state.activeFight.resumable = false; this.checkpointControl();
+      this.event(null, 'fight', `Retrying interrupted fight from the same seed: ${this.state.activeFight.boss.spec.meta.name}.`);
+      return structuredClone(this.state.activeFight);
+    }
     if (this.state.activeFight) throw new UserError('A fight is already active. Finish or skip it first.', 409);
     this.claimHook?.();
+    if (this.state.queue[0] && this.staging.has(this.state.queue[0].id)) throw new UserError('The next boss is being saved. Try again shortly.', 503);
     const boss = this.state.queue.shift() ?? structuredClone(this.house[this.round % this.house.length]!);
     this.state.activeFight = { id: this.id(), boss, seed: GATE_POLICY.seeds[this.round++ % GATE_POLICY.seeds.length]!, startedAt: this.now() };
+    this.checkpointControl();
     this.event(null, 'fight', `Fight started: ${boss.spec.meta.name} by @${boss.spec.meta.creator}.`);
     this.kick(); return structuredClone(this.state.activeFight);
   }
@@ -221,11 +267,12 @@ export class ForgeCoordinator {
     this.state.activeFight = null; this.completedFights.push(id); if (this.completedFights.length > 50) this.completedFights.shift();
     const job = this.state.jobs.find((entry) => entry.id === fight.boss.jobId);
     if (job) { job.status = 'finished'; await this.persist(job); }
+    else await this.saveCheckpoint();
     this.event(job ?? null, 'fight', `${fight.boss.spec.meta.name}: ${outcome === 'won' ? 'boss defeated' : outcome === 'lost' ? 'streamer defeated' : 'fight skipped'}.`);
     this.notify(`${outcome === 'won' ? 'Boss defeated' : outcome === 'lost' ? 'Defeated by' : 'Fight skipped'}: ${fight.boss.spec.meta.name} by @${fight.boss.spec.meta.creator}.`, outcome === 'won' ? 'success' : 'info', this.options.demo ? 'demo' : 'local');
     for (const listener of this.fightListeners) listener(structuredClone(fight), outcome, stats ? structuredClone(stats) : null);
     this.kick();
   }
-  async idle() { while (this.task) await this.task; await this.saves; }
+  async idle() { while (this.task) await this.task; await this.durable(); }
   async close() { this.closing = true; this.intakeAbort.abort(); this.controller?.abort(); await this.idle(); }
 }

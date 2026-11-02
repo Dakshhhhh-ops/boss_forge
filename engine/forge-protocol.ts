@@ -47,7 +47,7 @@ export const QueuedBossSchema = z.strictObject({
   threadId: z.string().nullable(), spec: BossSchema, gate: GateSummarySchema,
 });
 export type QueuedBoss = z.infer<typeof QueuedBossSchema>;
-export const FightSchema = z.strictObject({ id: z.string(), boss: QueuedBossSchema, seed: z.number().int(), startedAt: z.number() });
+export const FightSchema = z.strictObject({ id: z.string(), boss: QueuedBossSchema, seed: z.number().int(), startedAt: z.number(), resumable: z.boolean().optional() });
 export type ForgeFight = z.infer<typeof FightSchema>;
 export const TwitchStateSchema = z.strictObject({
   status: z.enum(['off', 'demo', 'connecting', 'connected', 'error']), channel: z.string().nullable(),

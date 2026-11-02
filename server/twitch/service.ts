@@ -11,6 +11,7 @@ import { Highlights } from './highlights';
 import { Redemptions } from './redemptions';
 import { RewardsApi } from './rewards';
 import type { Showtime } from '../showtime/showtime';
+import type { RedemptionPersistence } from '../forge/recovery';
 
 const Subscription = z.object({ type: z.string(), version: z.literal('1'), condition: z.object({ broadcaster_user_id: z.string(), user_id: z.string().optional(), reward_id: z.string().optional() }) });
 export class TwitchService {
@@ -32,12 +33,12 @@ export class TwitchService {
   private stopped = false;
   private chatConnected = false;
   constructor(private readonly coordinator: ForgeCoordinator, config: TwitchConfig,
-    private readonly transport: { fetcher?: typeof fetch; socket?: (url: string) => WebSocket; persist?: typeof saveEnvironment } = {}, private readonly showtime: Showtime | null = null) {
+    private readonly transport: { fetcher?: typeof fetch; socket?: (url: string) => WebSocket; persist?: typeof saveEnvironment; recovery?: RedemptionPersistence } = {}, private readonly showtime: Showtime | null = null) {
     const persist = transport.persist ?? saveEnvironment;
     this.api = new TwitchApi(config, persist, transport.fetcher); this.rewards = new RewardsApi(this.api, persist);
     const say = (text: string) => this.say(text);
     this.commands = new ChatCommands(coordinator, config.broadcasterId, config.botId, say, Date.now, showtime ? (command) => showtime.handleChat(command) : null);
-    this.redemptions = new Redemptions(coordinator, this.rewards, config.broadcasterId, say);
+    this.redemptions = new Redemptions(coordinator, this.rewards, config.broadcasterId, say, transport.recovery);
     this.highlights = new Highlights(this.api, coordinator);
   }
   private publish(patch: Partial<TwitchState>) { this.state = { ...this.state, ...patch }; this.coordinator.setTwitch(this.state); }

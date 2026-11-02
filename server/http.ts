@@ -60,7 +60,7 @@ export function createForgeHttp(coordinator: ForgeCoordinator, port: number, pro
           if (!parsed.success) throw new UserError('Invalid review request.');
           await coordinator.review(parsed.data.id, parsed.data.approve); json(res, 200, { ok: true }); return;
         }
-        if (path === '/api/claim') { json(res, 200, coordinator.claimNext()); return; }
+        if (path === '/api/claim') { const fight = coordinator.claimNext(); await coordinator.durable(); json(res, 200, fight); return; }
         if (path === '/api/finish') {
           const parsed = z.strictObject({ id: z.string().max(64), outcome: z.enum(['won', 'lost', 'skipped']), stats: FightStatsSchema.optional() }).safeParse(await body(req));
           if (!parsed.success) throw new UserError('Invalid fight result.');

@@ -6,6 +6,8 @@ A Codex x TwitchCon hackathon project by [ayushagarwalhere](https://github.com/a
 
 **[Play the four built-in bosses →](https://ayushagarwalhere.github.io/boss_forge/)** No installation, account, Twitch setup or API key needed. Choose a boss and click **Enter arena**. Keyboard/gamepad supported; autofire is on. This public browser demo uses the house collection. Live Codex generation and Twitch run in the local app below.
 
+The live queue reserves its fifth slot for rematches, and all submission paths share the 50-job history limit. Verified queued bosses, interrupted fights and Channel Points settlement records now survive restarts in `.artifacts/recovery/`. Every restored boss must pass a fresh server gate before play; see [recovery and storage requirements](docs/recovery.md).
+
 ## Current milestone: M5
 
 Four playable house bosses, a deterministic 60 Hz simulation, original procedural art and WebAudio sound, keyboard/gamepad controls, and an independent fairness gate. The Codex forge includes streamed progress, moderation, approvals, three attempts, server revalidation and queued fights. Twitch chat/Channel Points, refunds, highlights and the transparent OBS overlay work alongside an account-free replay demo. Optional generator scripts compile in an isolated interpreter into commands that the same gate and game simulate.

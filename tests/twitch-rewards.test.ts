@@ -7,6 +7,16 @@ import { json, twitchConfig } from './twitch-helpers';
 
 const reward = { id: 'owned-reward', title: 'Forge a Boss', is_user_input_required: true, should_redemptions_skip_request_queue: false };
 describe('app-owned rewards and highlights', () => {
+  it('confirms an already-applied settlement after an uncertain network result', async () => {
+    const fetcher = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(json({ message: 'Already fulfilled' }, 400))
+      .mockResolvedValueOnce(json({ data: [{ id: 'paid-request', status: 'FULFILLED' }] }));
+    const api = new TwitchApi(twitchConfig(), async () => {}, fetcher), rewards = new RewardsApi(api, async () => {});
+    rewards.id = 'owned-reward';
+    await rewards.settle('paid-request', 'FULFILLED');
+    expect(fetcher.mock.calls.map((call) => call[1]?.method)).toEqual(['PATCH', 'GET']);
+    api.close();
+  });
   it('discovers only manageable rewards and repairs input/queue settings before enabling intake', async () => {
     const calls: { url: URL; method: string; body: unknown }[] = [], persist = vi.fn(async () => {});
     const fetcher: typeof fetch = async (input, init) => {

@@ -220,8 +220,8 @@ const client = judgeMode ? null : new ForgeClient((state: ForgeSnapshot) => {
   element('showtime-line').textContent = showLine;
   element('showtime-line').hidden = !showLine;
   element('record-line').textContent = `RECORD ${show.hall.wins}–${show.hall.losses}${show.hall.streak ? ` · ${Math.abs(show.hall.streak)} ${show.hall.streak > 0 ? 'WIN' : 'LOSS'} STREAK` : ''}`;
-  claimButton.disabled = !!state.activeFight;
-  claimButton.textContent = state.queue.length ? `Fight next forged boss (${state.queue.length}) ↗` : 'Fight a verified house boss ↗';
+  claimButton.disabled = !!state.activeFight && !state.activeFight.resumable;
+  claimButton.textContent = state.activeFight?.resumable ? 'Retry interrupted fight from the same seed ↗' : state.queue.length ? `Fight next forged boss (${state.queue.length}) ↗` : 'Fight a verified house boss ↗';
   element('forge-state').textContent = `${state.mode === 'replay' ? 'CACHED REPLAY · no live Codex' : 'LIVE CODEX'} · ${state.queue.length} queued${state.activeFight ? ' · a fight is active' : ''}.`;
 }, (online) => { if (!online) { claimButton.disabled = true; element('forge-state').textContent = 'House play is available. Start npm run demo to connect the forge.'; } });
 claimButton.addEventListener('click', () => {

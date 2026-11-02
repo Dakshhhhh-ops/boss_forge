@@ -1,8 +1,10 @@
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import { createServer as createViteServer } from 'vite';
 import { loadConfig } from './config';
 import { PROJECT_ROOT } from './gate/files';
-import { buildRuntime, loadHouse, prepareWorkspace, saveJob, verifyWorkspace } from './forge/artifacts';
+import { buildRuntime, loadHouse, prepareWorkspace, saveJob, verifyWorkspace, verifySavedSpec } from './forge/artifacts';
+import { RecoveryStore } from './forge/recovery';
 import { ForgeCoordinator, gateSummary } from './forge/coordinator';
 import { CodexAgent } from './forge/codex-agent';
 import { ReplayAgent } from './demo/replay-agent';
@@ -16,6 +18,9 @@ import { Showtime } from './showtime/showtime';
 import { diagnostics } from './showtime/diagnostics';
 
 const config = loadConfig();
+const scope = config.demo ? 'demo' : config.twitch ? `twitch:${createHash('sha256').update(JSON.stringify([config.twitch.clientId, config.twitch.broadcasterId])).digest('hex')}` : 'local';
+const recovery = new RecoveryStore(join(PROJECT_ROOT, '.artifacts', 'recovery', `${createHash('sha256').update(scope).digest('hex').slice(0, 24)}.json`), scope);
+await recovery.load();
 console.log('Preparing runtime and independently checking house fallbacks…');
 await buildRuntime();
 const house = (await loadHouse()).map((boss) => ({ id: boss.id, jobId: null, mode: 'house' as const, threadId: null, spec: boss.spec, gate: gateSummary(boss.report) }));
@@ -23,14 +28,16 @@ const agent = config.mode === 'codex' ? new CodexAgent(config.apiKey, config.mod
 const coordinator = new ForgeCoordinator({
   agent, verify: verifyWorkspace, save: saveJob, moderate: createModerator(config.moderationMode, config.moderationKey),
   prepare: (job, rematch) => prepareWorkspace(job, PROJECT_ROOT, rematch ?? null),
+  checkpoint: (state) => recovery.saveForge(state), reverify: (spec) => verifySavedSpec(spec),
 }, house, config);
+await coordinator.restore(recovery.forge());
 
 // Stream show: recaps, Rematch Patch, chat polls and the Hall of Fame. Demo history is kept separate
 // so simulated fights never mix with a real channel's record.
 const history = new FightHistory(join(PROJECT_ROOT, '.artifacts', 'showtime', config.demo ? 'history-demo.json' : 'history.json'));
 const showtime = new Showtime(coordinator, history, config.showtime);
 await showtime.start();
-const twitch = config.twitch ? new TwitchService(coordinator, config.twitch, {}, showtime) : null;
+const twitch = config.twitch ? new TwitchService(coordinator, config.twitch, { recovery }, showtime) : null;
 
 const http = createForgeHttp(coordinator, config.port, config.production, {
   showtime,
@@ -75,5 +82,6 @@ async function close() {
   if (closing) return; closing = true; if (timer) clearTimeout(timer);
   crowd?.close(); await showtime.close();
   await coordinator.close(); await twitch?.close(); await vite?.close(); await http.close();
+  await recovery.flush();
 }
 process.once('SIGINT', () => { void close(); }); process.once('SIGTERM', () => { void close(); });

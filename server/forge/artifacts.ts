@@ -12,6 +12,7 @@ import type { Workspace, VerifiedBoss, RematchInput } from './types';
 import { rematchBrief } from '../showtime/rematch';
 import { buildScriptRuntime, CJS_BANNER } from '../scripts/bundle';
 import { readBossFile } from '../scripts/load';
+import { BossSchema } from '../../engine/boss-api';
 
 export async function buildRuntime(root = PROJECT_ROOT) {
   const directory = join(root, '.artifacts', 'runtime'); await mkdir(directory, { recursive: true });
@@ -89,6 +90,13 @@ export async function verifyWorkspace(workspace: Workspace, job: ForgeJob, root 
 export async function saveJob(job: ForgeJob, root = PROJECT_ROOT) {
   const directory = join(root, '.artifacts', 'requests'); await mkdir(directory, { recursive: true });
   await writeFile(resolve(directory, `${job.id}.json`), `${JSON.stringify(job, null, 2)}\n`);
+}
+
+/** Only server-owned saved specs (including validated compiled command data) enter this recovery path. */
+export async function verifySavedSpec(input: unknown, root = PROJECT_ROOT): Promise<VerifiedBoss> {
+  const spec = BossSchema.parse(input);
+  const report = await runGateWorker(spec, join(root, '.artifacts', 'runtime'));
+  return { spec, report };
 }
 
 export async function loadHouse(root = PROJECT_ROOT) {

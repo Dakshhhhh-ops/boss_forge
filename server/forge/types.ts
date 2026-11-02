@@ -3,6 +3,7 @@ import type { AgentResultSchema, ForgeEvent, ForgeJob, ForgeProgress } from '../
 import type { BossSpec } from '../../engine/boss-api';
 import type { FightStats } from '../../engine/forge-protocol';
 import type { GateReport } from '../../engine/gate-report';
+import type { ForgeCheckpoint } from './recovery';
 
 export interface Workspace { id: string; directory: string }
 /** What the streamer just beat, handed to the forge for a harder "MK" upgrade. */
@@ -20,5 +21,7 @@ export interface ForgeServices {
   prepare(job: ForgeJob, rematch?: RematchInput | null): Promise<Workspace>;
   verify(workspace: Workspace, job: ForgeJob): Promise<VerifiedBoss>;
   save(job: ForgeJob): Promise<void>;
+  checkpoint?(state: ForgeCheckpoint): Promise<void>;
+  reverify?(spec: BossSpec): Promise<VerifiedBoss>;
   agent: ForgeAgent;
 }
