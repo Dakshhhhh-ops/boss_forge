@@ -5,6 +5,8 @@ Copy-ready text for the Codex x TwitchCon hackathon form. Fill in the two placeh
 - **Video:** `<YouTube link>`
 - **Codex session ID (main build thread, from `/status`):** `<session id>`
 - **Repo:** https://github.com/ayushagarwalhere/boss_forge
+- **Play now (no install):** https://ayushagarwalhere.github.io/boss_forge/
+- **Full show demo (simulated viewers, cached replays, labeled):** https://bossforge.16-178-179-90.sslip.io/
 
 ---
 

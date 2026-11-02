@@ -1,12 +1,45 @@
 <!doctype html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Boss Forge · OBS Overlay</title><link rel="stylesheet" href="/overlay/style.css"></head>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Boss Forge · OBS Overlay</title><link rel="stylesheet" href="/shared/theme.css"><link rel="stylesheet" href="/overlay/style.css"></head>
 <body><main id="overlay" aria-label="Boss Forge broadcast overlay">
-  <header><div class="brand"><span class="brand-mark">⌁</span> BOSS<span>FORGE</span><small>CHAT DESIGNS. YOU SURVIVE.</small></div><div class="status"><span id="mode">CONNECTING</span><span id="connection">WAITING FOR LOCAL SERVER</span><span id="twitch">TWITCH DISCONNECTED</span></div></header>
-  <section class="boss panel" id="boss-card"><p class="eyebrow" id="card-label">THE NEXT CHALLENGE</p><canvas id="portrait" width="376" height="200" aria-label="Procedural boss portrait"></canvas><h1 id="boss-name">The forge is warming up.</h1><p id="creator">A good idea is all it takes.</p><blockquote id="quote">Describe a boss. Let the forge earn its place.</blockquote><ol id="reading"></ol><div id="gate" class="gate" hidden></div><p id="boss-origin" class="origin">WAITING FOR VERIFIED BOSSES</p></section>
-  <aside class="queue panel"><div id="show-vote" class="show-vote" hidden></div><div class="section-heading"><h2>ON DECK</h2><span id="queue-count">0 / 5</span></div><div id="queue"><p class="empty">The next verified boss lands here.</p></div><p class="queue-note">Every boss earns its place in the gate.</p><div id="show-hall" class="show-hall"></div></aside>
-  <section id="show-rematch" class="show-rematch panel" hidden aria-live="polite"></section>
-  <section id="show-recap" class="show-recap panel" hidden aria-live="polite"></section>
+  <!-- Zones (1920×1080): left column x40–456, right column x1536–1880, top band above the arena, ticker below it.
+       The arena capture (x488–1504, y142–904) stays clear except for the brief recap and announcements. -->
+  <header class="brand sheet"><span class="brand-mark" id="brand-mark"></span><div><b>BOSS FORGE</b><small>Chat designs. You survive.</small></div></header>
+
+  <section class="status sheet" aria-label="Connection status">
+    <div class="status-row"><span class="k">FORGE</span><span id="mode">CONNECTING</span></div>
+    <div class="status-row"><span class="k">SERVER</span><span id="connection">WAITING FOR LOCAL SERVER</span></div>
+    <div class="status-row"><span class="k">TWITCH</span><span id="twitch">DISCONNECTED</span></div>
+  </section>
+
+  <section class="boss sheet" id="boss-card">
+    <div class="sheet-head"><p class="label" id="card-label">THE NEXT CHALLENGE</p><span class="spec-mark" id="spec-mark"></span></div>
+    <div class="plate"><canvas id="portrait" width="370" height="176" aria-label="Procedural boss portrait"></canvas><span class="plate-axis" aria-hidden="true">FIG. 01</span></div>
+    <h1 id="boss-name">The forge is warming up.</h1>
+    <p id="creator">A good idea is all it takes.</p>
+    <blockquote id="quote">Describe a boss. Let the forge earn its place.</blockquote>
+    <ol id="reading"></ol>
+    <div id="gate" class="gate" hidden></div>
+    <p id="boss-origin" class="origin">WAITING FOR VERIFIED BOSSES</p>
+  </section>
+
+  <aside class="queue sheet">
+    <div id="show-vote" class="show-vote" hidden></div>
+    <div class="sheet-head"><h2 class="label">ON DECK</h2><span class="count" id="queue-count">0 / 5</span></div>
+    <div id="queue"><p class="empty">The next verified boss lands here.</p></div>
+    <div id="show-hall" class="show-hall"></div>
+  </aside>
+
+  <section id="show-rematch" class="show-rematch sheet" hidden aria-live="polite"></section>
+  <section id="show-recap" class="show-recap sheet" hidden aria-live="polite"></section>
   <p id="show-announce" class="show-announce" hidden aria-live="polite"></p>
   <div id="toasts" class="toasts" aria-live="polite"></div>
-  <section class="ticker panel"><div class="ticker-label"><span class="spark">✳</span><div><h2>INSIDE THE FORGE</h2><p id="activity">Waiting for an idea.</p></div></div><div class="ticker-details"><div id="forge-progress" hidden><p id="progress-files"></p><p id="progress-gate"></p><ul id="progress-checks" aria-label="Independent server gate results"></ul></div><ol id="ticker"><li>Reading → writing → testing → server verification → queue.</li></ol></div></section>
+
+  <section class="ticker sheet">
+    <div class="cta"><span class="label">IN CHAT</span><strong>!boss <em>your idea</em></strong><small>Codex builds it. The gate decides.</small></div>
+    <div class="ticker-label"><h2 class="label"><i class="dot pulse"></i> INSIDE THE FORGE</h2><p id="activity">Waiting for an idea.</p></div>
+    <div class="ticker-details">
+      <div id="forge-progress" hidden><p id="progress-files"></p><p id="progress-gate" class="label"></p><ul id="progress-checks" aria-label="Independent server gate results"></ul></div>
+      <ol id="ticker"><li>Reading → writing → testing → server verification → queue.</li></ol>
+    </div>
+  </section>
 </main><script type="module" src="/overlay/main.ts"></script></body></html>

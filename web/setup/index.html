@@ -1,52 +1,80 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#111411">
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#0b0c0e">
   <title>Boss Forge · Stream Setup</title>
-  <link rel="stylesheet" href="/play/style.css"><link rel="stylesheet" href="/shared/motion.css"><link rel="stylesheet" href="/setup/style.css">
+  <link rel="stylesheet" href="/shared/theme.css"><link rel="stylesheet" href="/forge/style.css"><link rel="stylesheet" href="/setup/style.css">
 </head>
-<body>
-  <header class="masthead">
-    <a class="wordmark" href="/" aria-label="Boss Forge home"><span class="brand-icon">⌁</span>BOSS<span>FORGE</span><span class="edition">/ SETUP</span></a>
-    <nav aria-label="Main navigation"><a href="/setup/" aria-current="page">Setup</a><a href="/forge/">The forge</a><a href="/play/">The arena</a><a href="/overlay/" target="_blank" rel="noopener">OBS overlay ↗</a></nav>
-    <span class="local" id="connection"><i></i> CONNECTING</span>
+<body class="bf">
+  <header class="masthead bf-mast">
+    <a class="bf-wordmark" href="/" aria-label="Boss Forge home"><span id="forge-mark" class="mark"></span><span>Boss<b>Forge</b></span><span class="edition t-num">/ setup</span></a>
+    <nav class="tabs" aria-label="Main navigation"><a href="/setup/" aria-current="page">Setup</a><a href="/forge/">The forge</a><a href="/play/">The arena</a><a href="/overlay/" target="_blank" rel="noopener">OBS overlay ↗</a></nav>
+    <span class="local chip" id="connection"><i class="dot"></i> Connecting</span>
   </header>
-  <main>
-    <section class="page-heading"><div><p class="eyebrow">GO LIVE IN FIVE MINUTES.</p><h1>Stream setup <em>checklist.</em></h1></div><p class="heading-note">Everything the show needs,<br>checked by your local server.</p></section>
-    <div id="verdict" class="verdict" role="status">Checking your setup…</div>
-    <div class="setup-grid">
-      <section class="setup-card" aria-labelledby="checks-title">
-        <div class="card-head"><p class="eyebrow">01 / READINESS</p><h2 id="checks-title">What’s working</h2></div>
-        <ul id="checks" class="checks"><li class="check pending"><span class="dot"></span><div><strong>Loading…</strong></div></li></ul>
-        <p class="fine">No keys or tokens are ever sent to this page. Change settings in <code>.env.local</code> and restart the server.</p>
+  <main class="fc">
+    <section class="page-heading fc-hero">
+      <div class="fc-side"><div class="fc-bigmark" id="hero-mark"></div>
+        <ol class="fc-toc" aria-label="On this page">
+          <li><span class="n">01</span><a href="#checks-title">Readiness</a></li>
+          <li><span class="n">02</span><a href="#obs-title">OBS sources</a></li>
+          <li><span class="n">03</span><a href="#live-title">Go live</a></li>
+          <li><span class="n">04</span><a href="#show-title">Chat commands</a></li>
+        </ol></div>
+      <div class="fc-hero-copy">
+        <p class="t-label">Go live in five minutes</p>
+        <h1 class="t-display">Stream setup, <em>checked.</em></h1>
+        <p class="fc-lede">Everything the show needs, verified by your local server. No keys or tokens are ever sent to this page.</p>
+      </div>
+    </section>
+
+    <div id="verdict" class="su-verdict" role="status">Checking your setup…</div>
+
+    <div class="su-grid">
+      <section class="forge-panel su-checks-panel" aria-labelledby="checks-title">
+        <header class="fc-head"><div><p class="t-label"><span class="t-num">01</span> &nbsp;Readiness</p><h2 class="t-display" id="checks-title">What's working</h2></div><span class="chip" id="checks-count">—</span></header>
+        <ol id="checks" class="su-checks"><li class="check pending"><span class="n t-num">00</span><div><strong>Loading…</strong></div></li></ol>
+        <p class="fc-fine su-fine">Change settings in <code>.env.local</code> and restart the server. This page refreshes on its own.</p>
       </section>
-      <section class="setup-card" aria-labelledby="obs-title">
-        <div class="card-head"><p class="eyebrow">02 / OBS</p><h2 id="obs-title">Add two sources</h2></div>
-        <ol class="steps">
-          <li><strong>Window Capture</strong> of the arena. Keep it focused while you play; it takes keyboard and gamepad input.<div class="url-row"><code id="url-play">http://127.0.0.1:8787/play/</code><button data-copy="url-play">Copy</button></div></li>
-          <li><strong>Browser Source</strong> above it: width <b>1920</b>, height <b>1080</b>, transparent, no custom CSS.<div class="url-row"><code id="url-overlay">http://127.0.0.1:8787/overlay/</code><button data-copy="url-overlay">Copy</button></div></li>
-          <li>Keep the <strong>forge console</strong> on a second monitor to approve ideas and run polls.<div class="url-row"><code id="url-forge">http://127.0.0.1:8787/forge/</code><button data-copy="url-forge">Copy</button></div></li>
-        </ol>
-        <div class="tests">
-          <button id="test-overlay" class="primary-test">Send overlay test ↗</button>
-          <button id="test-idea">Submit a sample idea</button>
-          <button id="test-twitch">Send Twitch test message</button>
-        </div>
-        <p id="test-result" class="test-result" role="status"></p>
-      </section>
-      <section class="setup-card wide" aria-labelledby="show-title">
-        <div class="card-head"><p class="eyebrow">03 / THE SHOW</p><h2 id="show-title">What chat can do</h2></div>
-        <div class="commands">
-          <div><code>!boss &lt;idea&gt;</code><p>Describe a boss. Codex builds it; the fairness gate checks it before it can reach you.</p></div>
-          <div><code>!vote 1|2|3</code><p>Polls open between fights when 2+ bosses are verified. The winner fights next.</p></div>
-          <div><code>!rematch</code><p>After you win, chat (or the boss’s creator) sends it back to the forge as a harder MK II.</p></div>
-          <div><code>!top · !record · !mybosses</code><p>Hall of Fame: creators earn points when their bosses fight, beat you, or get upgraded.</p></div>
-          <div><code>!queue</code><p>Lists the verified bosses waiting for you.</p></div>
-          <div><code>!approve · !reject · !skip · !startvote</code><p>Broadcaster and moderators only.</p></div>
+
+      <div class="su-side">
+        <section class="forge-panel" aria-labelledby="obs-title">
+          <header class="fc-head"><div><p class="t-label"><span class="t-num">02</span> &nbsp;OBS</p><h2 class="t-display" id="obs-title">Add two sources</h2></div></header>
+          <ol class="su-steps">
+            <li><span class="n t-num">A</span><div><strong>Window capture</strong> of the arena. Keep it focused while you play; it takes keyboard and gamepad input.<div class="url-row"><code id="url-play">http://127.0.0.1:8787/play/</code><button class="btn" data-copy="url-play">Copy</button></div></div></li>
+            <li><span class="n t-num">B</span><div><strong>Browser source</strong> above it: width <b>1920</b>, height <b>1080</b>, transparent, no custom CSS.<div class="url-row"><code id="url-overlay">http://127.0.0.1:8787/overlay/</code><button class="btn" data-copy="url-overlay">Copy</button></div></div></li>
+            <li><span class="n t-num">C</span><div>Keep the <strong>forge console</strong> on a second monitor to approve ideas and run polls.<div class="url-row"><code id="url-forge">http://127.0.0.1:8787/forge/</code><button class="btn" data-copy="url-forge">Copy</button></div></div></li>
+          </ol>
+          <div class="su-tests">
+            <button id="test-overlay" class="block su-test-main"><span class="t-label">One-click check</span><span class="fc-submit-row"><span class="fc-submit-big">Send overlay test</span><span class="arrow">↗</span></span></button>
+            <div class="su-test-row"><button id="test-idea" class="btn">Submit a sample idea <span class="arrow">↗</span></button><button id="test-twitch" class="btn">Twitch test message <span class="arrow">↗</span></button></div>
+          </div>
+          <p id="test-result" class="test-result" role="status"></p>
+        </section>
+
+        <section class="forge-panel" aria-labelledby="live-title">
+          <header class="fc-head"><div><p class="t-label"><span class="t-num">03</span> &nbsp;Real chat</p><h2 class="t-display" id="live-title">Go live</h2></div></header>
+          <ol class="su-steps su-cmds">
+            <li><span class="n t-num">1</span><div>Sign in as the streamer.<div class="url-row"><code id="cmd-broadcaster">npm run auth -- broadcaster</code><button class="btn" data-copy="cmd-broadcaster">Copy</button></div></div></li>
+            <li><span class="n t-num">2</span><div>Sign in the chat bot (can be the same account).<div class="url-row"><code id="cmd-bot">npm run auth -- bot</code><button class="btn" data-copy="cmd-bot">Copy</button></div></div></li>
+            <li><span class="n t-num">3</span><div>Set <code>TWITCH_ENABLED=true</code> in <code>.env.local</code>, then start the server.<div class="url-row"><code id="cmd-server">npm run server</code><button class="btn" data-copy="cmd-server">Copy</button></div></div></li>
+          </ol>
+        </section>
+      </div>
+
+      <section class="forge-panel su-wide" aria-labelledby="show-title">
+        <header class="fc-head"><div><p class="t-label"><span class="t-num">04</span> &nbsp;The show</p><h2 class="t-display" id="show-title">What chat can do</h2></div><span class="chip is-twitch">Twitch chat</span></header>
+        <div class="su-commands">
+          <div><span class="n t-num">01</span><code>!boss &lt;idea&gt;</code><p>Describe a boss. Codex builds it; the fairness gate checks it before it can reach you.</p></div>
+          <div><span class="n t-num">02</span><code>!vote 1|2|3</code><p>Polls open between fights when 2+ bosses are verified. The winner fights next.</p></div>
+          <div><span class="n t-num">03</span><code>!rematch</code><p>After you win, chat (or the boss's creator) sends it back to the forge as a harder MK II.</p></div>
+          <div><span class="n t-num">04</span><code>!top · !record · !mybosses</code><p>Hall of Fame: creators earn points when their bosses fight, beat you, or get upgraded.</p></div>
+          <div><span class="n t-num">05</span><code>!queue</code><p>Lists the verified bosses waiting for you.</p></div>
+          <div><span class="n t-num">06</span><code>!approve · !reject · !skip · !startvote</code><p>Broadcaster and moderators only.</p></div>
         </div>
       </section>
     </div>
-    <footer class="page-footer"><span>CHAT DESIGNS THE BOSS. CODEX BUILDS IT. YOU FIGHT IT.</span><span>LOCAL SERVER · NO SECRETS IN THE BROWSER</span><span>BOSS FORGE © 2026</span></footer>
+
+    <footer class="fc-foot"><span>Chat designs the boss. Codex builds it. You fight it.</span><span>Local server · no secrets in the browser</span><span>Boss Forge © 2026</span></footer>
   </main>
   <script type="module" src="/setup/main.ts"></script>
 </body>

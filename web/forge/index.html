@@ -1,27 +1,91 @@
 <!doctype html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#111411"><title>Boss Forge · The Forge</title><link rel="stylesheet" href="/play/style.css"><link rel="stylesheet" href="/shared/motion.css"><link rel="stylesheet" href="/forge/style.css"></head>
-<body>
-<header class="masthead"><a class="wordmark" href="/"><span class="brand-icon">⌁</span>BOSS<span>FORGE</span><span class="edition">/ 003</span></a><nav aria-label="Main navigation"><a href="/forge/" aria-current="page">The forge</a><a href="/play/" target="_blank" rel="noopener">The arena ↗</a><a href="/overlay/" target="_blank" rel="noopener">OBS overlay ↗</a><a href="/setup/">Setup</a></nav><span class="local" id="connection"><i></i> CONNECTING</span></header>
-<main>
-  <section class="page-heading"><div><p class="eyebrow">FROM CHAT TO CHALLENGE.</p><h1>Bad ideas. <em>Great bosses.</em></h1></div><p class="heading-note">The forge works while you fight.<br>Every boss earns its place.</p></section>
-  <div class="mode-banner" id="mode-banner" role="status">Connecting to the local forge. Start with npm run demo if the server is offline.</div>
-  <p id="twitch-status" class="integration-status" role="status">Twitch disconnected.</p><p id="moderation-status" class="integration-status" role="status">Checking moderation mode.</p><div id="integration-toasts" class="integration-toasts" aria-live="polite"></div>
-  <div class="forge-grid">
-    <div class="forge-main">
-      <section class="forge-panel"><div class="panel-heading"><div><p class="eyebrow">01 / THE BRIEF</p><h2>What are we fighting?</h2></div><span class="pill">LOCAL CONTROLS</span></div>
-        <form id="request-form"><div class="input-row"><label for="creator">Viewer login<input id="creator" name="creator" value="local_viewer" pattern="[a-z0-9_]{1,25}" maxlength="25" required autocomplete="off"></label><span class="input-tip">Describe attacks, movement,<br>and a little personality.</span></div><label for="description" class="sr-only">Boss description</label><textarea id="description" name="description" minlength="5" maxlength="1000" rows="3" required placeholder="A heavy furnace with fire rings, faster spirals below half HP, and taunts in caps…"></textarea><div class="form-bottom"><p>Viewer text is a brief. The server decides what passes.</p><button class="primary-submit" id="submit-request">Send to forge ↗</button></div></form><p id="form-message" role="status"></p>
-      </section>
-      <section class="forge-panel"><div class="panel-heading"><div><p class="eyebrow">03 / THE WORK</p><h2>Inside the forge</h2></div><span class="pill" id="job-count">0 REQUESTS</span></div><div id="jobs" class="jobs"><p class="empty">Waiting for the first idea. Simulated viewers arrive automatically in demo mode.</p></div></section>
-      <section class="forge-panel ticker-panel"><div class="panel-heading"><div><p class="eyebrow">02 / THE PROGRESS</p><h2>Build ticker</h2></div><span class="pill">EVENT STREAM</span></div><ol id="ticker" class="ticker"><li class="empty">Reading → writing → testing → independent verification → queue.</li></ol></section>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#0b0c0e">
+  <title>Boss Forge · The Forge</title>
+  <link rel="stylesheet" href="/shared/theme.css"><link rel="stylesheet" href="/forge/style.css">
+</head>
+<body class="bf">
+<header class="masthead bf-mast">
+  <a class="bf-wordmark" href="/" aria-label="Boss Forge home"><span id="forge-mark" class="mark"></span><span>Boss<b>Forge</b></span><span class="edition t-num">/ 003</span></a>
+  <nav class="tabs" aria-label="Main navigation"><a href="/forge/" aria-current="page">The forge</a><a href="/play/" target="_blank" rel="noopener">The arena ↗</a><a href="/overlay/" target="_blank" rel="noopener">OBS overlay ↗</a><a href="/setup/">Setup</a></nav>
+  <span class="local chip" id="connection"><i class="dot"></i> Connecting</span>
+</header>
+<main class="fc">
+  <section class="page-heading fc-hero">
+    <div class="fc-side"><div class="fc-bigmark" id="hero-mark"></div>
+    <ol class="fc-toc" aria-label="On this page">
+      <li><span class="n">00</span><a href="#ticker-title">The forge, live</a></li>
+      <li><span class="n">01</span><a href="#brief-title">The brief</a></li>
+      <li><span class="n">02</span><a href="#jobs-title">Requests</a></li>
+      <li><span class="n">03</span><a href="#rail">Queue &amp; show</a></li>
+    </ol></div>
+    <div class="fc-hero-copy">
+      <p class="t-label">From chat to challenge — the streamer's control room</p>
+      <h1 class="t-display">Bad ideas. <em>Great bosses.</em></h1>
+      <p class="fc-lede">Chat writes a sentence. Codex turns it into a boss in an isolated workspace. The server re-runs the fairness gate before anything reaches the arena.</p>
     </div>
-    <aside class="forge-rail">
-      <section class="forge-panel show-panel"><div class="panel-heading"><h2>Stream show</h2><span class="pill">REMATCH · POLLS · FAME</span></div><div id="showtime"></div></section>
-      <section class="forge-panel"><div class="panel-heading"><h2>Up next</h2><span class="pill" id="queue-count">0 / 5</span></div><div id="queue"><p class="empty">Verified bosses land here. House bosses fill the gaps.</p></div><a class="arena-link" href="/play/" target="_blank" rel="noopener">Open the arena ↗</a></section>
-      <section class="forge-panel"><div class="panel-heading"><h2>In the arena</h2><span class="pill">CURRENT FIGHT</span></div><div id="active-fight" class="empty">No fight active.</div><button id="skip-fight" class="text-button" hidden>Skip this fight ↗</button></section>
-      <section class="forge-panel"><div class="panel-heading"><h2>Viewer feed</h2><span class="pill" id="chat-source">REQUEST FEED</span></div><div id="chat" class="chat"><p class="empty">Waiting for boss requests.</p></div></section>
-      <p class="build-note"><i></i> M5 / READY TO FORGE<br><span>Moderation, isolated choreography &amp; original sound.<br>Use a transparent 1920×1080 OBS browser source.</span></p>
+  </section>
+
+  <section class="fc-status" aria-label="System status">
+    <div class="fc-status-row"><span class="chip" id="mode-chip">Forge</span><p id="mode-banner" role="status">Connecting to the local forge. Start with npm run demo if the server is offline.</p></div>
+    <div class="fc-status-row"><span class="chip" id="twitch-chip">Twitch</span><p id="twitch-status" role="status">Twitch disconnected.</p></div>
+    <div class="fc-status-row"><span class="chip" id="moderation-chip">Moderation</span><p id="moderation-status" role="status">Checking moderation mode.</p></div>
+    <div id="integration-toasts" class="fc-toasts" aria-live="polite"></div>
+  </section>
+
+  <div class="fc-grid">
+    <section class="fc-live forge-panel ticks" aria-labelledby="ticker-title">
+      <header class="fc-head">
+        <div><p class="t-label"><span class="t-num">00</span> &nbsp;Event stream</p><h2 class="t-display" id="ticker-title">Inside the forge, live</h2></div>
+        <span class="chip" id="ticker-live"><i class="dot"></i> Idle</span>
+      </header>
+      <div class="fc-now" id="now" aria-live="polite"></div>
+      <ol id="ticker" class="fc-ticker" aria-label="Build ticker"><li class="empty">Reading → writing → testing → independent verification → queue.</li></ol>
+    </section>
+
+    <section class="fc-brief forge-panel" aria-labelledby="brief-title">
+      <header class="fc-head"><div><p class="t-label"><span class="t-num">01</span> &nbsp;The brief</p><h2 class="t-display" id="brief-title">What are we fighting?</h2></div><span class="chip">Local controls</span></header>
+      <form id="request-form">
+        <label for="creator" class="t-label">Viewer login</label>
+        <input id="creator" name="creator" value="local_viewer" pattern="[a-z0-9_]{1,25}" maxlength="25" required autocomplete="off">
+        <label for="description" class="t-label">Boss description</label>
+        <textarea id="description" name="description" minlength="5" maxlength="1000" rows="5" required placeholder="A heavy furnace with fire rings, faster spirals below half HP, and taunts in caps…"></textarea>
+        <p class="fc-fine">Viewer text is a brief, never an instruction. The server decides what passes.</p>
+        <button class="block fc-submit" id="submit-request"><span class="t-label">Send to forge</span><span class="fc-submit-row"><span class="fc-submit-big">Forge it</span><span class="arrow">↗</span></span></button>
+      </form>
+      <p id="form-message" class="fc-message" role="status"></p>
+    </section>
+
+    <section class="fc-jobs forge-panel" aria-labelledby="jobs-title">
+      <header class="fc-head"><div><p class="t-label"><span class="t-num">02</span> &nbsp;Requests</p><h2 class="t-display" id="jobs-title">Every idea, accounted for</h2></div><span class="chip" id="job-count">0 requests</span></header>
+      <div id="jobs" class="fc-joblist"><p class="empty">Waiting for the first idea. Simulated viewers arrive automatically in demo mode.</p></div>
+    </section>
+
+    <aside class="fc-rail" id="rail" aria-label="Queue and show">
+      <section class="forge-panel">
+        <header class="fc-head"><div><p class="t-label"><span class="t-num">03</span> &nbsp;In the arena</p><h2 class="t-display">Current fight</h2></div></header>
+        <div id="active-fight" class="fc-fight empty">No fight active.</div>
+        <button id="skip-fight" class="btn fc-wide" hidden>Skip this fight <span class="arrow">↗</span></button>
+      </section>
+      <section class="forge-panel">
+        <header class="fc-head"><div><p class="t-label"><span class="t-num">04</span> &nbsp;Verified queue</p><h2 class="t-display">Up next</h2></div><span class="chip" id="queue-count">0 / 5</span></header>
+        <div id="queue" class="fc-queue"><p class="empty">Verified bosses land here. House bosses fill the gaps.</p></div>
+        <a class="btn fc-wide" href="/play/" target="_blank" rel="noopener">Open the arena <span class="arrow">↗</span></a>
+      </section>
+      <section class="forge-panel show-panel">
+        <header class="fc-head"><div><p class="t-label"><span class="t-num">05</span> &nbsp;Rematch · polls · fame</p><h2 class="t-display">Stream show</h2></div></header>
+        <div id="showtime"></div>
+      </section>
+      <section class="forge-panel">
+        <header class="fc-head"><div><p class="t-label"><span class="t-num">06</span> &nbsp;Viewer feed</p><h2 class="t-display">Chat</h2></div><span class="chip" id="chat-source">Request feed</span></header>
+        <div id="chat" class="fc-chat"><p class="empty">Waiting for boss requests.</p></div>
+      </section>
     </aside>
   </div>
-  <footer class="page-footer"><span>DESIGNED BY CHAT. EARNED IN THE GATE.</span><span>ORIGINAL SHAPES. QUESTIONABLE INTENTIONS.</span><span>BOSS FORGE © 2026</span></footer>
-</main><script type="module" src="/forge/main.ts"></script>
-</body></html>
+
+  <footer class="fc-foot"><span>Designed by chat. Earned in the gate.</span><span>Use a transparent 1920×1080 OBS browser source for /overlay/.</span><span>Boss Forge © 2026</span></footer>
+</main>
+<script type="module" src="/forge/main.ts"></script>
+</body>
+</html>

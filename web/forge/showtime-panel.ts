@@ -20,12 +20,12 @@ export class ShowtimePanel {
     const blocks: HTMLElement[] = [];
 
     const record = node('div', 'show-record');
-    record.append(node('strong', '', `${hall.wins}–${hall.losses}`), node('span', '', hall.streak ? `${Math.abs(hall.streak)}-fight ${hall.streak > 0 ? 'win' : 'losing'} streak` : 'Streamer record'));
+    record.append(node('strong', 't-display', `${hall.wins}–${hall.losses}`), node('span', '', hall.streak ? `${Math.abs(hall.streak)}-fight ${hall.streak > 0 ? 'win' : 'losing'} streak` : 'Streamer record'));
     blocks.push(record);
 
     const rematch = show.rematch;
     const rematchBox = node('section', `show-box rematch ${rematch?.status ?? 'idle'}`);
-    rematchBox.append(node('p', 'show-label', 'REMATCH PATCH'));
+    rematchBox.append(node('p', 'show-label t-label', 'Rematch patch · !rematch'));
     if (!rematch) rematchBox.append(node('p', 'show-copy', 'Beat a forged boss and chat can send it back to the forge, harder (!rematch).'));
     else {
       rematchBox.append(node('p', 'show-title', `${rematch.boss} → ${rematch.nextName}`));
@@ -33,7 +33,7 @@ export class ShowtimePanel {
       if (rematch.status === 'open') {
         const meter = node('div', 'show-meter'), fill = node('i', '');
         fill.style.width = `${Math.min(100, (rematch.votes / rematch.needed) * 100)}%`; meter.append(fill); rematchBox.append(meter);
-        const button = node('button', 'show-action', 'Start rematch now ↗');
+        const button = node('button', 'btn btn-accent show-action', 'Start rematch now ↗');
         button.addEventListener('click', () => { void this.post('showtime/rematch', {}); });
         rematchBox.append(button);
       }
@@ -42,10 +42,10 @@ export class ShowtimePanel {
 
     const vote = show.vote;
     const voteBox = node('section', `show-box vote ${vote ? (vote.closed ? 'closed' : 'open') : 'idle'}`);
-    voteBox.append(node('p', 'show-label', 'CHAT POLL · NEXT BOSS'));
+    voteBox.append(node('p', 'show-label t-label', 'Chat poll · !vote'));
     if (!vote) {
       voteBox.append(node('p', 'show-copy', state.queue.length >= 2 ? 'Let chat pick the next fight with !vote 1/2/3.' : 'Polls open when two or more verified bosses are queued.'));
-      const button = node('button', 'show-action', 'Start poll ↗');
+      const button = node('button', 'btn show-action', 'Start poll ↗');
       button.disabled = state.queue.length < 2 || !!state.activeFight;
       button.addEventListener('click', () => { void this.post('showtime/vote', { action: 'start' }); });
       voteBox.append(button);
@@ -59,7 +59,7 @@ export class ShowtimePanel {
       });
       voteBox.append(node('p', 'show-copy', vote.closed ? 'Poll closed. The winner fights next.' : `${seconds(vote.endsAt)}s left · closes automatically when you claim the next fight.`));
       if (!vote.closed) {
-        const button = node('button', 'show-action', 'Close poll now');
+        const button = node('button', 'btn show-action', 'Close poll now');
         button.addEventListener('click', () => { void this.post('showtime/vote', { action: 'close' }); });
         voteBox.append(button);
       }
@@ -67,20 +67,20 @@ export class ShowtimePanel {
     blocks.push(voteBox);
 
     const fame = node('section', 'show-box fame');
-    fame.append(node('p', 'show-label', 'HALL OF FAME · !top'));
+    fame.append(node('p', 'show-label t-label', 'Hall of fame · !top'));
     if (!hall.creators.length) fame.append(node('p', 'show-copy', 'No forged bosses have fought yet.'));
     else {
       const list = node('ol', 'show-fame');
       for (const entry of hall.creators) {
         const item = node('li', '');
-        item.append(node('span', '', `@${entry.creator}`), node('b', '', `${entry.score} pts`), node('small', '', `${entry.streamerDefeats} win${entry.streamerDefeats === 1 ? '' : 's'} vs you · ${entry.fights} fight${entry.fights === 1 ? '' : 's'}`));
+        item.append(node('span', '', `@${entry.creator}`), node('b', 't-num', `${entry.score} pts`), node('small', '', `${entry.streamerDefeats} win${entry.streamerDefeats === 1 ? '' : 's'} vs you · ${entry.fights} fight${entry.fights === 1 ? '' : 's'}`));
         list.append(item);
       }
       fame.append(list);
     }
     if (hall.recent.length) {
       const recent = node('ul', 'show-recent');
-      for (const fight of hall.recent.slice(0, 3)) recent.append(node('li', fight.outcome, `${fight.outcome === 'won' ? '🏆' : '💀'} ${fight.boss} · @${fight.creator}${fight.stats ? ` · ${fight.stats.seconds}s` : ''}`));
+      for (const fight of hall.recent.slice(0, 3)) { const row = node('li', fight.outcome); row.append(node('span', `chip ${fight.outcome === 'won' ? 'is-live' : 'is-bad'}`, fight.outcome === 'won' ? 'Streamer won' : 'Boss won'), document.createTextNode(` ${fight.boss} · @${fight.creator}${fight.stats ? ` · ${fight.stats.seconds}s` : ''}`)); recent.append(row); }
       fame.append(recent);
     }
     blocks.push(fame);

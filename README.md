@@ -1,18 +1,45 @@
 # Boss Forge
 
-**Chat designs the boss, Codex builds it, the streamer fights it.**
+**Chat designs the boss. Codex builds it. The streamer has to survive it.**
 
-A Codex x TwitchCon hackathon project by [ayushagarwalhere](https://github.com/ayushagarwalhere). Viewers will describe bullet-hell bosses; the runtime forge will write code, check fairness, and queue a fight for the streamer.
+![A live Boss Forge fight: the OBS overlay over the arena, recorded on a real Twitch channel](docs/media/fight.webp)
 
-**[Play the four built-in bosses →](https://ayushagarwalhere.github.io/boss_forge/)** No installation, account, Twitch setup or API key needed. Choose a boss and click **Enter arena**. Keyboard/gamepad supported; autofire is on. This public browser demo uses the house collection. Live Codex generation and Twitch run in the local app below.
+A viewer types one sentence in Twitch chat, for example `!boss a giant toaster that shoots flaming bread`. About a minute later the streamer is fighting it, with the viewer's name on it. Every boss is written by **OpenAI Codex** in a sandboxed workspace, then proven fair by an independent server gate before it can reach the stream.
 
-The live queue reserves its fifth slot for rematches, and all submission paths share the 50-job history limit. Verified queued bosses, interrupted fights and Channel Points settlement records now survive restarts in `.artifacts/recovery/`. Every restored boss must pass a fresh server gate before play; see [recovery and storage requirements](docs/recovery.md).
+| | |
+|---|---|
+| **Play now, no install** | [ayushagarwalhere.github.io/boss_forge](https://ayushagarwalhere.github.io/boss_forge/): the four built-in bosses in your browser |
+| **Full show demo** | [bossforge.16-178-179-90.sslip.io](https://bossforge.16-178-179-90.sslip.io/): forge console, arena and OBS overlay with simulated viewers and clearly labeled cached replays (no keys on that server) |
+| **Video** | _YouTube link_ |
+| **Run it yourself** | `npm ci && npm run demo`, then open http://127.0.0.1:8787/setup/ |
 
-## Current milestone: M5
+## How it works
+
+1. **Chat sends an idea.** `!boss <idea>` in Twitch chat. The bot replies with a short code and a moderator approves it with `!approve`.
+2. **Codex builds it, live.** Each request opens a Codex SDK thread in an isolated workspace with a typed BossAPI and the rules in `forge/AGENTS.md`; the viewer's words are passed as data, never instructions. Codex writes `boss.json` (patterns, phases, movement, taunts), runs the local checks and fixes its own mistakes, up to three attempts.
+3. **The gate decides.** The server, not Codex, re-runs a fixed fairness gate on the real spec: a reference bot fights it five times and must win at least 2 and lose at least 1, a safe space must always exist, and the tick budget must hold. Unfair bosses are rejected and Channel Points are refunded.
+4. **The streamer fights it** in an original bullet-hell arena, while a transparent OBS overlay shows the boss card, the viewer's quote, gate results and what Codex is doing.
+
+![The forge console during a live Codex run: attempt 1/3, Read, Write and Test steps, real Twitch chat on the right](docs/media/forge-live.webp)
+
+After a win, chat types `!rematch` and Codex patches a harder **MK II** from the fight stats. It has to pass the same gate:
+
+![Crumbustion MK II passed the fairness gate after a !rematch from real Twitch chat](docs/media/rematch.webp)
+
+_All three images come from one recorded session on a real Twitch channel with live Codex. The fights are played by the gate's reference bot (labeled AUTOPILOT)._
+
+## How Codex is used
+
+- **To build the product.** Boss Forge was built in OpenAI Codex milestone by milestone (M0 contract → M1 engine → M2 gate → M3 forge → M4 Twitch and overlay → M5 moderation, sound and scripts), with project rules in `AGENTS.md`. Details are in [How we used Codex](#how-we-used-codex).
+- **Inside the product.** Every viewer request is a real Codex SDK run (`@openai/codex-sdk`), with typed events streamed to the overlay, a workspace-write permission profile with no network, and server-side re-verification of everything Codex produces.
+
+## Status and verification
 
 Four playable house bosses, a deterministic 60 Hz simulation, original procedural art and WebAudio sound, keyboard/gamepad controls, and an independent fairness gate. The Codex forge includes streamed progress, moderation, approvals, three attempts, server revalidation and queued fights. Twitch chat/Channel Points, refunds, highlights and the transparent OBS overlay work alongside an account-free replay demo. Optional generator scripts compile in an isolated interpreter into commands that the same gate and game simulate.
 
 All four house bosses pass the gate at standard difficulty. Replay mode and simulated events stay visibly labeled. Twitch chat intake, bot replies, approvals and the overlay have been run on a real channel (chat commands only; that channel is not Affiliate, so Channel Points were not exercised). Live Codex generation has been run end to end under Linux (WSL2): a real chat request was written by Codex in its sandboxed workspace and passed the server's gate in about a minute. Stream highlights and the native Windows Codex sandbox still need operator verification; on Windows, run live Codex under WSL (see [forge setup](docs/forge.md)). The included script example and adversarial sandbox tests run locally without credentials. See the [recording and submission runbook](docs/demo.md) and the [Devpost submission text](docs/submission.md).
+
+The live queue reserves its fifth slot for rematches, and all submission paths share the 50-job history limit. Verified queued bosses, interrupted fights and Channel Points settlement records now survive restarts in `.artifacts/recovery/`. Every restored boss must pass a fresh server gate before play; see [recovery and storage requirements](docs/recovery.md).
 
 ## The stream show
 
