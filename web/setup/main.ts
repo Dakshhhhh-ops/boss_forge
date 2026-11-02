@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ForgeClient } from '../shared/forge-client';
+import { forgeMarkSvg } from '../shared/iso';
 import { mountPlatformBadge, playEntrance } from '../shared/motion';
 
 const Diagnostics = z.object({
@@ -11,22 +12,25 @@ type Diagnostics = z.infer<typeof Diagnostics>;
 
 function el<T extends HTMLElement = HTMLElement>(id: string) { const element = document.getElementById(id); if (!element) throw new Error(`Missing ${id}`); return element as T; }
 function node<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, text = '') { const element = document.createElement(tag); element.className = className; element.textContent = text; return element; }
-const STATUS_LABEL = { ok: 'READY', warn: 'CHECK', off: 'OFF', error: 'FIX' } as const;
+const STATUS_LABEL = { ok: 'Ready', warn: 'Check', off: 'Off', error: 'Fix' } as const;
+const STATUS_TONE = { ok: 'is-live', warn: 'is-warn', off: '', error: 'is-bad' } as const;
 
 function render(data: Diagnostics) {
   const verdict = el('verdict');
-  verdict.className = `verdict ${data.ready ? (data.live ? 'live' : 'ready') : 'blocked'}`;
+  verdict.className = `su-verdict ${data.ready ? (data.live ? 'live' : 'ready') : 'blocked'}`;
   verdict.textContent = !data.ready ? 'Something needs fixing before you go live. See the items marked FIX.'
     : data.live ? 'You are live-ready: Twitch chat is connected and the forge is running.'
       : data.demo ? 'Demo mode: everything works with simulated viewers. Connect Twitch when you want real chat.'
         : 'Ready for local play. Connect Twitch (docs/twitch.md) to let your chat in.';
-  el('checks').replaceChildren(...data.checks.map((check) => {
+  el('checks').replaceChildren(...data.checks.map((check, index) => {
     const item = node('li', `check ${check.status}`), body = node('div', '');
     body.append(node('strong', '', check.label), node('p', '', check.detail));
     if (check.fix) body.append(node('p', 'fix', `→ ${check.fix}`));
-    item.append(node('span', 'dot'), body, node('span', 'badge', STATUS_LABEL[check.status]));
+    item.append(node('span', 'n t-num', String(index + 1).padStart(2, '0')), body, node('span', `chip ${STATUS_TONE[check.status]}`.trim(), STATUS_LABEL[check.status]));
     return item;
   }));
+  const ok = data.checks.filter((check) => check.status === 'ok').length;
+  el('checks-count').textContent = `${ok} / ${data.checks.length} ready`;
   el('url-play').textContent = data.urls.play; el('url-overlay').textContent = data.urls.overlay; el('url-forge').textContent = data.urls.forge;
 }
 
@@ -36,14 +40,17 @@ async function refresh() {
     if (!response.ok) throw new Error('unavailable');
     render(Diagnostics.parse(await response.json()));
   } catch {
-    el('verdict').className = 'verdict blocked';
+    el('verdict').className = 'su-verdict blocked';
     el('verdict').textContent = 'The local server is not running. Start it with npm run demo (no accounts) or npm run server.';
   }
 }
 
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 function scheduleRefresh() { if (!refreshTimer) refreshTimer = setTimeout(() => { refreshTimer = null; void refresh(); }, 2000); }
-const client = new ForgeClient(() => scheduleRefresh(), (online) => { el('connection').textContent = online ? '● LOCAL SERVER' : '○ OFFLINE'; });
+const client = new ForgeClient(() => scheduleRefresh(), (online) => {
+  const connection = el('connection'); connection.className = `local chip ${online ? 'is-live' : 'is-warn'}`;
+  connection.replaceChildren(node('i', `dot${online ? ' pulse' : ''}`), document.createTextNode(online ? ' Local server' : ' Offline'));
+});
 const result = el('test-result');
 async function run(path: string, body: unknown, success: string) {
   result.className = 'test-result';
@@ -56,10 +63,12 @@ el('test-twitch').addEventListener('click', () => { void run('twitch/test', {}, 
 for (const button of document.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
   button.addEventListener('click', () => {
     const text = el(button.dataset.copy!).textContent ?? '';
-    void navigator.clipboard?.writeText(text).then(() => { button.textContent = 'Copied'; setTimeout(() => { button.textContent = 'Copy'; }, 1500); }).catch(() => { button.textContent = 'Select it'; });
+    void navigator.clipboard?.writeText(text).then(() => { button.textContent = 'Copied ✓'; setTimeout(() => { button.textContent = 'Copy'; }, 1500); }).catch(() => { button.textContent = 'Select it'; });
   });
 }
 window.addEventListener('pagehide', () => client.close());
 void refresh();
+el('forge-mark').innerHTML = forgeMarkSvg();
+el('hero-mark').innerHTML = forgeMarkSvg();
 mountPlatformBadge();
-playEntrance('.verdict, .setup-card');
+playEntrance('.su-verdict, .forge-panel');

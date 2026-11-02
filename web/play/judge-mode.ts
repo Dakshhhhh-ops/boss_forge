@@ -2,7 +2,7 @@
 export function showJudgeMode() {
   document.body.classList.add('judge-mode');
   document.title = 'Boss Forge · Play instantly';
-  const home = document.querySelector<HTMLAnchorElement>('.wordmark');
+  const home = document.querySelector<HTMLAnchorElement>('.bf-wordmark, .wordmark');
   if (home) home.href = import.meta.env.BASE_URL;
   const nav = document.querySelector('nav');
   const source = document.createElement('a');

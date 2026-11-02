@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0a0c0a">
-  <meta name="description" content="Chat designs the boss, Codex builds it, the streamer fights it.">
+  <meta name="theme-color" content="#0b0c0e">
+  <meta name="description" content="Chat designs the boss. Codex builds it. A fairness gate proves it. The streamer survives it.">
   <title>Boss Forge</title>
   <script>
     // Hide animated text until GSAP takes over; never leave it hidden if scripts fail.
@@ -13,113 +13,180 @@
       setTimeout(() => document.documentElement.classList.add('motion-ready'), 2500);
     }
   </script>
+  <link rel="stylesheet" href="/shared/theme.css">
   <link rel="stylesheet" href="/home/style.css">
 </head>
-<body>
-  <canvas id="scene" aria-hidden="true"></canvas>
-  <div class="grain" aria-hidden="true"></div>
+<body class="bf">
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="shell">
+    <aside class="rail" aria-label="Boss Forge">
+      <a class="bf-wordmark rail-word" href="/" aria-label="Boss Forge home"><span class="rail-mark" data-forge-mark></span>Boss Forge</a>
+      <figure class="specimen" aria-hidden="true">
+        <svg class="specimen-svg" id="anvil" viewBox="-120 -130 240 240" fill="none"></svg>
+        <figcaption class="specimen-cap">
+          <span class="t-mono">FIG. 01</span><span class="t-mono">THE FORGE · ISO 30°</span>
+        </figcaption>
+      </figure>
+      <nav class="rail-index" aria-label="Sections">
+        <p class="rail-head t-label"><span class="bracket" aria-hidden="true">⊢</span>Index</p>
+        <ol>
+          <li><a href="#how"><span class="n">01</span>How it works<i></i></a></li>
+          <li><a href="#gate"><span class="n">02</span>The gate<i></i></a></li>
+          <li><a href="#show"><span class="n">03</span>The show<i></i></a></li>
+          <li><a href="#codex"><span class="n">04</span>Codex<i></i></a></li>
+          <li><a href="#setup"><span class="n">05</span>Setup<i></i></a></li>
+        </ol>
+      </nav>
+    </aside>
 
-  <header class="nav">
-    <a class="wordmark" href="/" aria-label="Boss Forge home"><span class="brand-icon">⌁</span>BOSS<span>FORGE</span></a>
-    <nav aria-label="Main navigation"><a href="#how">How it works</a><a href="#gate">The gate</a><a href="#bosses">Bosses</a><a href="/forge/">The forge</a><a href="/setup/">Setup</a></nav>
-    <a class="nav-cta" href="/play/">Enter arena <span>↗</span></a>
-  </header>
+    <div class="page">
+      <header class="topbar">
+        <p class="event t-label"><span class="mk" data-mark="codex"></span><span class="x">×</span><span class="mk twitch" data-mark="twitch"></span>Codex × TwitchCon · 2026</p>
+        <nav class="tabs" aria-label="Main navigation">
+          <a href="/play/">Arena</a><a href="/forge/">Forge</a><a href="/overlay/" target="_blank" rel="noopener">Overlay</a><a href="/setup/">Setup</a><a href="https://github.com/ayushagarwalhere/boss_forge" target="_blank" rel="noopener">GitHub ↗</a>
+        </nav>
+      </header>
 
-  <main>
-    <section class="hero" aria-labelledby="hero-title">
-      <p class="eyebrow reveal">CODEX × TWITCHCON HACKATHON · 2026</p>
-      <h1 id="hero-title" class="hero-title">
-        <span class="line">Chat designs the boss.</span>
-        <span class="line">Codex builds it.</span>
-        <span class="line accent">You fight it.</span>
-      </h1>
-      <p class="hero-copy reveal">Viewers describe a bullet-hell boss in plain English. A Codex agent writes it against a typed BossAPI, a bot proves it is fair, and it lands in the streamer's arena.</p>
-      <div class="hero-actions reveal">
-        <a class="btn primary" href="/play/">Enter the arena <span>↗</span></a>
-        <a class="btn ghost" href="/forge/">Watch the forge <span>↗</span></a>
-      </div>
-      <ul class="platforms reveal" aria-label="Platforms">
-        <li class="platform codex" data-tilt><span class="platform-mark" data-mark="codex"></span><span><small>BUILT WITH</small>Codex</span></li>
-        <li class="platform twitch" data-tilt><span class="platform-mark" data-mark="twitch"></span><span><small>MADE FOR</small>Twitch</span></li>
-      </ul>
-      <a class="scroll-cue" href="#briefs" aria-label="Scroll down"><span></span></a>
-    </section>
+      <main id="main">
+        <section class="hero" aria-labelledby="hero-title">
+          <h1 id="hero-title" class="t-display hero-title">
+            <span class="line">Chat designs the boss.</span>
+            <span class="line">Codex builds it.</span>
+            <span class="line"><em>You</em> survive it.</span>
+          </h1>
+          <div class="hero-foot">
+            <p class="lede reveal">A viewer types one sentence in Twitch chat. A sandboxed Codex agent turns it into a playable bullet-hell boss, a bot proves the boss is fair, and it drops into the streamer's arena about a minute later, with the viewer's name on it.</p>
+            <div class="pills reveal" aria-label="The contract">
+              <span class="pill">Viewer idea</span><span class="pill-line" aria-hidden="true"></span><span class="pill round">Verified boss</span>
+            </div>
+          </div>
+        </section>
 
-    <section id="briefs" class="marquee" aria-label="Example viewer briefs">
-      <div class="marquee-row" data-direction="-1">
-        <span>!forge a furnace that only taunts in caps</span><span>✦</span><span>three orbiters doing a figure eight</span><span>✦</span><span>a crystal sniper whose core opens after every laser</span><span>✦</span><span>a disco ball with phase-two energy</span><span>✦</span>
-      </div>
-      <div class="marquee-row outline" data-direction="1">
-        <span>bullets that spiral when it gets angry</span><span>✦</span><span>a toaster that summons smaller toasters</span><span>✦</span><span>lasers, but make them polite</span><span>✦</span><span>a swarm that remembers</span><span>✦</span>
-      </div>
-      <p class="marquee-note">Example briefs. Viewer text is treated as data, never as instructions.</p>
-    </section>
+        <section class="ticker" aria-label="Example viewer briefs">
+          <div class="ticker-row" data-direction="-1">
+            <span>“a giant toaster that shoots flaming bread”</span><i>/</i><span>“a disco ball that fires lasers on the beat”</span><i>/</i><span>“three orbiters doing a figure eight”</span><i>/</i><span>“a crystal sniper whose core opens after every laser”</span><i>/</i>
+          </div>
+          <p class="ticker-note t-mono">EXAMPLE BRIEFS · VIEWER TEXT IS DATA, NEVER INSTRUCTIONS</p>
+        </section>
 
-    <section class="manifesto" aria-label="Principle">
-      <p class="scrub-text">Every boss has to earn its place. Viewer text is a brief, never an instruction. Codex writes the spec. A bot fights it five times. If it isn't fair, it doesn't ship.</p>
-    </section>
+        <section id="how" class="sec" aria-labelledby="how-title">
+          <header class="sec-head">
+            <span class="t-num">01</span>
+            <h2 id="how-title" class="t-display sec-title">From one chat message<br>to a <em>boss fight.</em></h2>
+          </header>
+          <ol class="flow">
+            <li class="flow-row" data-row><span class="t-num">01</span><span class="flow-icon" data-mark="twitch"></span><h3>Chat</h3><p>A viewer sends <code>!boss &lt;idea&gt;</code> or redeems Channel Points. The bot replies with a short code; a mod approves with <code>!approve</code>.</p></li>
+            <li class="flow-row" data-row><span class="t-num">02</span><span class="flow-icon" data-mark="codex"></span><h3>Codex</h3><p>A Codex SDK thread writes <code>boss.json</code> against a typed BossAPI in a locked workspace, runs the local checks, and fixes its own mistakes. Up to three attempts.</p></li>
+            <li class="flow-row" data-row><span class="t-num">03</span><span class="flow-icon glyph" aria-hidden="true">◎</span><h3>The gate</h3><p>The server, not Codex, re-runs an unchangeable fairness gate on the real spec. Unfair bosses are rejected and their points refunded.</p></li>
+            <li class="flow-row" data-row><span class="t-num">04</span><span class="flow-icon glyph" aria-hidden="true">⌁</span><h3>The arena</h3><p>The streamer fights it in a deterministic 60 Hz arena, captured in OBS, with a transparent overlay telling chat everything.</p></li>
+          </ol>
+        </section>
 
-    <section id="how" class="how" aria-labelledby="how-title">
-      <div class="section-head">
-        <p class="eyebrow">01 / THE PIPELINE</p>
-        <h2 id="how-title" class="split-heading">From a chat message to a boss fight.</h2>
-      </div>
-      <ol class="steps">
-        <li class="step" data-tilt style="--accent:#9146FF"><span class="step-no">01</span><span class="step-mark" data-mark="twitch"></span><h3>Chat</h3><p>A viewer sends a boss brief through Twitch chat or Channel Points. Demo viewers work offline.</p></li>
-        <li class="step" data-tilt style="--accent:#f1f2ea"><span class="step-no">02</span><span class="step-mark" data-mark="codex"></span><h3>Codex</h3><p>A sandboxed Codex SDK thread writes the spec against the typed BossAPI, with up to three attempts.</p></li>
-        <li class="step" data-tilt style="--accent:#78ffb2"><span class="step-no">03</span><span class="step-glyph">◎</span><h3>The gate</h3><p>A headless dodger plays five seeded runs. The server reruns everything; no claimed pass is trusted.</p></li>
-        <li class="step" data-tilt style="--accent:#ff7038"><span class="step-no">04</span><span class="step-glyph">⌁</span><h3>The arena</h3><p>The streamer fights it in a deterministic 60 Hz canvas game, captured in OBS.</p></li>
-      </ol>
-    </section>
+        <section id="gate" class="sec" aria-labelledby="gate-title">
+          <header class="sec-head">
+            <span class="t-num">02</span>
+            <h2 id="gate-title" class="t-display sec-title">Hard, but <em>never cheap.</em></h2>
+          </header>
+          <div class="gate-grid">
+            <p class="gate-copy reveal">A reference bot with human-like reactions fights every boss on five fixed seeds. If a troll asks for a wall of bullets, the gate says no before it ever reaches the stream.</p>
+            <dl class="spec-table" aria-label="Fairness gate policy">
+              <div data-row><dt>Seeded bot runs</dt><dd>5</dd></div>
+              <div data-row><dt>Bot must win (beatable)</dt><dd>≥ 2 / 5</dd></div>
+              <div data-row><dt>Bot must lose (interesting)</dt><dd>≥ 1 / 5</dd></div>
+              <div data-row><dt>Safe space, every half second</dt><dd>≥ 25%</dd></div>
+              <div data-row><dt>Laser warning</dt><dd>≥ 350 ms</dd></div>
+              <div data-row><dt>Live bullets</dt><dd>≤ 400</dd></div>
+              <div data-row><dt>Time to kill</dt><dd>45 – 120 s</dd></div>
+              <div data-row><dt>p99 tick at 60 Hz</dt><dd>≤ 16.7 ms</dd></div>
+            </dl>
+          </div>
+          <div class="specimens-head">
+            <p class="t-label">House specimens · all four pass the gate</p>
+            <span class="t-mono dim">FIG. 02 – 05</span>
+          </div>
+          <div class="specimens" id="boss-cards"></div>
+        </section>
 
-    <section id="show" class="how show" aria-labelledby="show-title">
-      <div class="section-head">
-        <p class="eyebrow">02 / THE SHOW</p>
-        <h2 id="show-title" class="split-heading">Chat keeps playing after the boss dies.</h2>
-      </div>
-      <ol class="show-steps">
-        <li class="show-step" data-tilt style="--accent:#9146FF"><span class="step-no">!rematch</span><h3>Rematch Patch</h3><p>Beat a boss and chat can send it back to the forge. Codex reads the fight stats and builds a harder MK II, which still has to pass the gate.</p></li>
-        <li class="show-step" data-tilt style="--accent:#cbf579"><span class="step-no">!vote 1·2·3</span><h3>Chat picks the fight</h3><p>Between fights a live poll lets chat choose which verified boss you face next, with bars on the overlay.</p></li>
-        <li class="show-step" data-tilt style="--accent:#ffcc66"><span class="step-no">!top</span><h3>Hall of Fame</h3><p>Every fight is recorded. Creators climb the leaderboard when their bosses beat you, and your record follows you across streams.</p></li>
-      </ol>
-    </section>
+        <section id="show" class="sec" aria-labelledby="show-title">
+          <header class="sec-head">
+            <span class="t-num">03</span>
+            <h2 id="show-title" class="t-display sec-title">Chat keeps playing<br><em>after the boss dies.</em></h2>
+          </header>
+          <ol class="cmd-list">
+            <li data-row><code class="cmd">!rematch</code><h3>Rematch Patch</h3><p>Beat a boss and chat can send it back. Codex reads the fight stats and builds a harder MK II, which must pass the same gate.</p></li>
+            <li data-row><code class="cmd">!vote 1·2·3</code><h3>Chat picks the fight</h3><p>Between fights a live poll lets chat choose which verified boss the streamer faces next, with bars on the overlay.</p></li>
+            <li data-row><code class="cmd">!top</code><h3>Hall of Fame</h3><p>Every fight is recorded. Creators climb the board when their bosses beat the streamer.</p></li>
+          </ol>
+        </section>
 
-    <section id="gate" class="gate" aria-labelledby="gate-title">
-      <div class="section-head">
-        <p class="eyebrow">03 / THE FAIRNESS GATE</p>
-        <h2 id="gate-title" class="split-heading">Hard, but never cheap.</h2>
-      </div>
-      <dl class="stats">
-        <div><dt>Minimum laser warning</dt><dd><span class="count" data-to="350">350</span><small>ms</small></dd></div>
-        <div><dt>Live bullet cap</dt><dd><span class="count" data-to="400">400</span></dd></div>
-        <div><dt>Safe space, every half second</dt><dd><span class="count" data-to="25">25</span><small>%+</small></dd></div>
-        <div><dt>Seeded bot runs</dt><dd><span class="count" data-to="5">5</span><small>× 2–4 wins</small></dd></div>
-      </dl>
-    </section>
+        <section id="codex" class="sec" aria-labelledby="codex-title">
+          <header class="sec-head">
+            <span class="t-num">04</span>
+            <h2 id="codex-title" class="t-display sec-title">Codex is in <em>every layer.</em></h2>
+          </header>
+          <div class="layers">
+            <article class="layer" data-row>
+              <p class="t-label">Built in Codex</p>
+              <h3 class="t-display">Milestone by milestone.</h3>
+              <ol class="index">
+                <li><span class="n">M0</span><span>Contract &amp; tooling</span><span class="t-mono dim">AGENTS.md</span></li>
+                <li><span class="n">M1</span><span>Deterministic engine &amp; arena</span><span class="t-mono dim">60 Hz</span></li>
+                <li><span class="n">M2</span><span>Fairness gate</span><span class="t-mono dim">5 seeds</span></li>
+                <li><span class="n">M3</span><span>Codex forge</span><span class="t-mono dim">SDK</span></li>
+                <li><span class="n">M4</span><span>Twitch &amp; OBS overlay</span><span class="t-mono dim">EventSub</span></li>
+                <li><span class="n">M5</span><span>Moderation, sound, scripts</span><span class="t-mono dim">QuickJS</span></li>
+              </ol>
+            </article>
+            <article class="layer" data-row>
+              <p class="t-label">Runs on Codex</p>
+              <h3 class="t-display">Every request, live.</h3>
+              <ol class="index">
+                <li><span class="n">01</span><span>One SDK thread per viewer idea</span><span class="t-mono dim">codex-sdk</span></li>
+                <li><span class="n">02</span><span>Workspace-write sandbox, no network</span><span class="t-mono dim">deny reads</span></li>
+                <li><span class="n">03</span><span>Writes, compiles, tests, repairs</span><span class="t-mono dim">≤ 3 tries</span></li>
+                <li><span class="n">04</span><span>Typed progress streamed to the overlay</span><span class="t-mono dim">events</span></li>
+                <li><span class="n">05</span><span>Server re-verifies before it ships</span><span class="t-mono dim">gate</span></li>
+              </ol>
+            </article>
+          </div>
+        </section>
 
-    <section id="bosses" class="bosses" aria-labelledby="bosses-title">
-      <div class="section-head">
-        <p class="eyebrow">04 / HOUSE BOSSES</p>
-        <h2 id="bosses-title" class="split-heading">Four bosses that already pass the gate.</h2>
-      </div>
-      <div class="boss-cards" id="boss-cards"></div>
-    </section>
+        <section id="setup" class="sec" aria-labelledby="setup-title">
+          <header class="sec-head">
+            <span class="t-num">05</span>
+            <h2 id="setup-title" class="t-display sec-title">Setup takes <em>minutes.</em></h2>
+          </header>
+          <div class="setup-grid">
+            <ol class="terminal" aria-label="Setup commands">
+              <li data-row><span class="t-num">01</span><code>npm run auth -- broadcaster</code><span class="t-label">Sign in · streamer</span></li>
+              <li data-row><span class="t-num">02</span><code>npm run auth -- bot</code><span class="t-label">Sign in · chat bot</span></li>
+              <li data-row><span class="t-num">03</span><code>npm run server</code><span class="t-label">Live Codex forge</span></li>
+              <li data-row><span class="t-num">04</span><code>/overlay/</code><span class="t-label">One OBS browser source</span></li>
+            </ol>
+            <p class="setup-note reveal">No keys? <code>npm run demo</code> runs the whole show offline with clearly labelled simulated viewers and cached replays. Nothing pretends to be a live Codex run.</p>
+          </div>
+        </section>
 
-    <section class="finale" aria-labelledby="finale-title">
-      <p class="eyebrow">YOUR CHAT HAS TERRIBLE IDEAS.</p>
-      <h2 id="finale-title" class="finale-title">Fight them.</h2>
-      <div class="hero-actions">
-        <a class="btn primary" href="/play/">Enter the arena <span>↗</span></a>
-        <a class="btn ghost" href="/forge/">Open the forge <span>↗</span></a>
-      </div>
-    </section>
-  </main>
+        <section class="finale" aria-labelledby="finale-title">
+          <p class="t-label">Your chat has terrible ideas.</p>
+          <h2 id="finale-title" class="t-display finale-title">Fight <em>them.</em></h2>
+        </section>
+      </main>
 
-  <footer class="footer">
-    <span>M5 · Original sound, moderation and isolated choreography. Live account testing requires your stream.</span>
-    <span>Twitch and Codex names and marks belong to their owners and only show the platforms this project targets.</span>
-    <span>BOSS FORGE © 2026 · MIT</span>
-  </footer>
+      <footer class="footer">
+        <span>Original procedural art and synthesized sound. MIT.</span>
+        <span>Twitch and Codex names and marks belong to their owners and only show the platforms this project targets.</span>
+        <span class="t-mono">BOSS FORGE © 2026</span>
+      </footer>
+    </div>
+  </div>
+
+  <a class="block cta" href="/play/">
+    <span class="cta-tick" aria-hidden="true"></span>
+    <span class="t-label">Four bosses ready · no install</span>
+    <span class="cta-title">Enter the arena</span>
+  </a>
+
   <script type="module" src="/home/main.ts"></script>
 </body>
 </html>

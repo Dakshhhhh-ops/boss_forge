@@ -39,7 +39,7 @@ export class OverlayShowtime {
       const title = rematch.status === 'open' ? 'REMATCH?' : rematch.status === 'waiting' ? 'REMATCH WAITING FOR CAPACITY' : rematch.status === 'forging' ? 'REMATCH PATCH IN THE FORGE' : rematch.status === 'queued' ? 'REMATCH READY' : 'REMATCH REJECTED';
       const meter = node('div', '', 'show-meter'), fill = node('i', '');
       fill.style.transform = `scaleX(${Math.min(1, rematch.votes / rematch.needed)})`; meter.append(fill);
-      box.replaceChildren(node('p', title, 'eyebrow'), node('h2', `${rematch.boss} → ${rematch.nextName.replace(rematch.boss.replace(/\s+MK\s+[IVX]+$/i, ''), '').trim() || rematch.nextName}`), node('p', rematch.status === 'open' ? `Type !rematch · ${rematch.votes}/${rematch.needed} · or @${rematch.creator} calls it` : rematch.message, 'show-sub'), ...(rematch.status === 'open' ? [meter, node('span', '', 'show-count')] : []));
+      box.replaceChildren(node('p', title, 'label'), node('h2', `${rematch.boss} → ${rematch.nextName.replace(rematch.boss.replace(/\s+MK\s+[IVX]+$/i, ''), '').trim() || rematch.nextName}`), node('p', rematch.status === 'open' ? `Type !rematch · ${rematch.votes}/${rematch.needed} · or @${rematch.creator} calls it` : rematch.message, 'show-sub'), ...(rematch.status === 'open' ? [meter, node('span', '', 'show-count')] : []));
       if (!reduced && rematch.status === 'open' && rematch.votes > 0) gsap.fromTo(box, { scale: 1.04 }, { scale: 1, duration: 0.4, ease: 'elastic.out(1, 0.4)' });
     }
     const count = box.querySelector<HTMLElement>('.show-count');
@@ -62,7 +62,7 @@ export class OverlayShowtime {
     ] : [];
     for (const [value, label] of cells) { const cell = node('div', ''); cell.append(node('strong', value), node('small', label)); grid.append(cell); }
     box.replaceChildren(
-      node('p', won ? 'BOSS DEFEATED' : 'STREAMER DEFEATED', 'eyebrow'),
+      node('p', won ? 'BOSS DEFEATED' : 'STREAMER DEFEATED', 'label'),
       node('h2', recap.boss),
       node('p', won ? `GG @${recap.creator}. The streamer survives.` : `@${recap.creator}'s boss wins this round!`, 'show-sub'),
       grid,
@@ -87,7 +87,7 @@ export class OverlayShowtime {
         bar.dataset.share = String(option.votes / total);
         return row;
       });
-      box.replaceChildren(node('p', vote.closed ? 'CHAT HAS SPOKEN' : 'CHAT PICKS THE NEXT BOSS', 'eyebrow'), ...rows, node('p', '', 'vote-foot'));
+      box.replaceChildren(node('p', vote.closed ? 'CHAT HAS SPOKEN' : 'CHAT PICKS THE NEXT BOSS', 'label'), ...rows, node('p', '', 'vote-foot'));
     }
     box.querySelector<HTMLElement>('.vote-foot')!.textContent = vote.closed ? 'The winner fights next.' : `${left(vote.endsAt)}s left · ${votes} vote${votes === 1 ? '' : 's'}`;
   }
@@ -96,9 +96,10 @@ export class OverlayShowtime {
     const hall = show.hall, key = JSON.stringify([hall.wins, hall.losses, hall.creators.slice(0, 3)]);
     if (key === this.keys.hall) return; this.keys.hall = key;
     const box = el('show-hall');
-    const top = hall.creators.slice(0, 3).map((entry, index) => { const row = node('li', ''); row.append(node('span', `${index + 1}`), node('b', `@${entry.creator}`), node('em', `${entry.streamerDefeats}★`)); return row; });
+    const top = hall.creators.slice(0, 3).map((entry, index) => { const row = node('li', ''); row.append(node('span', `${index + 1}`), node('b', `@${entry.creator}`), node('em', `${entry.streamerDefeats} ★`)); return row; });
     const list = node('ol', ''); list.append(...top);
-    box.replaceChildren(node('h2', 'HALL OF FAME'), node('p', `STREAMER ${hall.wins}–${hall.losses}${hall.streak ? ` · ${Math.abs(hall.streak)} ${hall.streak > 0 ? 'W' : 'L'} STREAK` : ''}`, 'hall-record'), ...(top.length ? [list] : [node('p', 'Beat the streamer to get on the board. !top', 'hall-empty')]));
+    const head = node('div', '', 'sheet-head'); head.append(node('h2', 'HALL OF FAME', 'label'), node('span', '!top', 'count'));
+    box.replaceChildren(head, node('p', `STREAMER ${hall.wins}–${hall.losses}${hall.streak ? ` · ${Math.abs(hall.streak)} ${hall.streak > 0 ? 'W' : 'L'} STREAK` : ''}`, 'hall-record'), ...(top.length ? [list] : [node('p', 'Beat the streamer to get on the board. !top', 'hall-empty')]));
   }
 
   private renderAnnouncement(show: ShowtimeState) {

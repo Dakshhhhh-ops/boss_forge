@@ -1,4 +1,5 @@
-import { animateTextSwaps, bindTilt, mountPlatformBadge, playEntrance, prefersReducedMotion } from '../shared/motion';
+import { mountPlatformBadge, playEntrance } from '../shared/motion';
+import { forgeMarkSvg, specimenSvg } from '../shared/iso';
 import { ARENA, PLAYER, TICK_RATE } from '../../engine/constants';
 import { createGame, stepGame, type Input } from '../../engine/simulation';
 import { houseBosses } from './house-bosses';
@@ -51,7 +52,6 @@ pilotBadge.className = 'autopilot-badge'; pilotBadge.hidden = autopilot === null
 pilotBadge.textContent = "AUTOPILOT · the gate's reference bot is playing";
 const buttons: HTMLButtonElement[] = [];
 const tags = ['HEAVY / FIRE RINGS', 'SWARM / FAST FOOTWORK', 'SNIPER / LOCKED LASERS', 'ORBIT / GOLDEN SPIRALS'];
-const icons = ['⬡', '◉', '◇', '〰'];
 const sound = new GameSound(), soundButton = element<HTMLButtonElement>('sound-toggle');
 function soundLabel() { soundButton.textContent = sound.available ? `Sound ${sound.enabled ? 'on' : 'off'}` : 'Sound unavailable'; soundButton.setAttribute('aria-pressed', String(sound.enabled)); soundButton.disabled = !sound.available; }
 soundLabel(); soundButton.addEventListener('click', () => { void sound.toggle().then(soundLabel); });
@@ -59,13 +59,13 @@ soundLabel(); soundButton.addEventListener('click', () => { void sound.toggle().
 houseBosses.forEach((boss, index) => {
   const button = document.createElement('button');
   button.className = 'boss-option'; button.setAttribute('aria-pressed', String(index === selected));
-  const icon = document.createElement('span'); icon.className = 'boss-icon'; icon.textContent = icons[index]!;
-  icon.style.setProperty('--boss-color', boss.look.palette[0]!); icon.style.setProperty('--boss-bg', `${boss.look.palette[0]}0D`);
+  const number = document.createElement('span'); number.className = 'boss-no'; number.textContent = String(index + 1).padStart(2, '0');
+  const icon = document.createElement('span'); icon.className = 'boss-icon'; icon.innerHTML = specimenSvg(boss.look.shape, boss.look.palette[0]!, 42);
   const info = document.createElement('span'); info.className = 'boss-info';
   const name = document.createElement('strong'); name.textContent = boss.meta.name;
   const tag = document.createElement('small'); tag.textContent = tags[index]!;
   const mark = document.createElement('span'); mark.className = 'boss-choice-mark'; mark.textContent = '↗';
-  info.append(name, tag); button.append(icon, info, mark);
+  info.append(name, tag); button.append(number, icon, info, mark);
   button.addEventListener('click', () => {
     if (fight) { const old = fight; fight = null; void client?.post('finish', { id: old.id, outcome: 'skipped' }).catch(() => {}); }
     selected = index; currentSpec = houseBosses[index]!; origin = `HOUSE BOSS / 0${index + 1}`; verification = ''; reset();
@@ -75,7 +75,8 @@ houseBosses.forEach((boss, index) => {
 
 function clearInput() { keys = new Set(); accumulator = 0; }
 function showCurtain(heading: string, message: string, action: string, eyebrow: string) {
-  curtain.hidden = false; title.textContent = heading; copy.textContent = message; start.textContent = action; start.hidden = false;
+  curtain.hidden = false;
+  if (title.textContent !== heading) { title.textContent = heading; title.classList.remove('swap'); void title.offsetWidth; title.classList.add('swap'); } copy.textContent = message; start.textContent = action; start.hidden = false;
   label.textContent = eyebrow; hint.textContent = 'Autofire is on. You take care of surviving.';
 }
 function reset() {
@@ -90,6 +91,10 @@ function reset() {
   element('boss-reading').replaceChildren(...game.spec.meta.reading.map((reading) => {
     const li = document.createElement('li'); li.textContent = reading; return li;
   }));
+  const specimen = element('specimen');
+  specimen.innerHTML = specimenSvg(game.spec.look.shape, game.spec.look.palette[0]!, 128);
+  specimen.style.setProperty('--spec', game.spec.look.palette[0]!);
+  specimen.dataset.label = `FIG. ${game.spec.look.shape.toUpperCase()} · R${game.spec.look.size} · ${game.spec.hp} HP`;
   element('seed-label').textContent = `SEED ${seed}`;
   showCurtain(game.spec.meta.name, game.spec.taunts.intro, 'Enter arena ↗', origin);
   element('forged-verification').textContent = verification;
@@ -239,8 +244,7 @@ window.addEventListener('pagehide', () => { client?.close(); sound.close(); });
 reset();
 requestAnimationFrame(frame);
 
-// Page motion: entrance, platform badge, tilt on boss picks, animated curtain title.
+// Page motion: entrance, platform badge and the animated curtain title.
+element('forge-mark').innerHTML = forgeMarkSvg();
 mountPlatformBadge();
 playEntrance('.arena-panel, .sidebar > *');
-if (!prefersReducedMotion()) document.querySelectorAll<HTMLElement>('.boss-option').forEach((option) => bindTilt(option, 8));
-animateTextSwaps(document.getElementById('curtain-title')!);

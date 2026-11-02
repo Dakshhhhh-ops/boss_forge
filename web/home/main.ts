@@ -6,7 +6,7 @@ import neon from '../../bosses/house/neon-brood.json';
 import prism from '../../bosses/house/prism-warden.json';
 import serpent from '../../bosses/house/brass-serpent.json';
 import { codexSvg, twitchSvg } from '../shared/brand-marks';
-import type { HeroScene } from './scene';
+import { forgeMarkSvg, specimenSvg } from '../shared/iso';
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
@@ -17,144 +17,134 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 for (const el of document.querySelectorAll<HTMLElement>('[data-mark]')) {
   el.innerHTML = el.dataset.mark === 'twitch' ? twitchSvg() : codexSvg();
 }
+for (const el of document.querySelectorAll<HTMLElement>('[data-forge-mark]')) el.innerHTML = forgeMarkSvg();
 
-// House boss cards, straight from the checked-in specs.
-const shapes: Record<string, string> = { mech: 'hex', blob: 'orb', crystal: 'diamond' };
+// House specimens, straight from the checked-in specs.
 const cards = document.getElementById('boss-cards')!;
-for (const boss of [ember, neon, prism, serpent]) {
-  const [a, b, c] = boss.look.palette;
+[ember, neon, prism, serpent].forEach((boss, index) => {
+  const [main] = boss.look.palette;
   const card = document.createElement('article');
   card.className = 'boss-card';
-  card.dataset.tilt = '';
-  card.style.setProperty('--a', a ?? '#cbf579');
-  card.style.setProperty('--b', b ?? '#ffffff');
-  card.style.setProperty('--c', c ?? '#111411');
-  card.innerHTML = `<div class="boss-art ${shapes[boss.look.shape] ?? 'orb'}"><i></i></div>
-    <p class="eyebrow">${boss.phases.length} PHASES · ${boss.hp.toLocaleString()} HP</p>
-    <h3></h3><blockquote></blockquote><p class="taunt"></p>`;
+  card.dataset.row = '';
+  card.innerHTML = `<p class="fig"><span>FIG. 0${index + 2}</span><span></span></p>
+    <div class="art">${specimenSvg(boss.look.shape, main ?? '#cbf579', 120)}</div>
+    <h3></h3><blockquote></blockquote>
+    <p class="meta"><span><i class="swatch"></i></span><span></span><span></span></p>`;
+  card.querySelector('.fig span:last-child')!.textContent = boss.look.shape.toUpperCase();
   card.querySelector('h3')!.textContent = boss.meta.name;
   card.querySelector('blockquote')!.textContent = `“${boss.meta.sourceQuote}”`;
-  card.querySelector('.taunt')!.textContent = boss.taunts.intro;
+  const [aura, hp, phases] = card.querySelectorAll<HTMLElement>('.meta span');
+  (card.querySelector('.swatch') as HTMLElement).style.background = main ?? '#cbf579';
+  aura!.append(boss.look.aura);
+  hp!.textContent = `${boss.hp.toLocaleString('en-US')} HP`;
+  phases!.textContent = `${boss.phases.length} phases`;
   cards.append(card);
-}
+});
 
-// 3D tilt that follows the pointer.
-function bindTilt(el: HTMLElement): void {
-  const rx = gsap.quickTo(el, 'rotationX', { duration: 0.5, ease: 'power3' });
-  const ry = gsap.quickTo(el, 'rotationY', { duration: 0.5, ease: 'power3' });
-  gsap.set(el, { transformPerspective: 900 });
-  el.addEventListener('pointermove', (e) => {
-    const r = el.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
-    rx(-y * 14); ry(x * 18);
-    el.style.setProperty('--mx', `${(x + 0.5) * 100}%`);
-    el.style.setProperty('--my', `${(y + 0.5) * 100}%`);
+/* ---------- Isometric anvil drawing (hidden lines dashed) ---------- */
+type V3 = [number, number, number];
+const COS = Math.cos(Math.PI / 6), SIN = Math.sin(Math.PI / 6);
+const project = ([x, y, z]: V3) => `${((x - y) * COS).toFixed(2)} ${((x + y) * SIN - z).toFixed(2)}`;
+
+/** A convex prism from a footprint (x, y) at height z0..z1, rotated by theta. */
+function solid(foot: [number, number][], z0: number, z1: number, theta: number) {
+  const c = Math.cos(theta), s = Math.sin(theta);
+  const ring = foot.map(([x, y]) => [x * c - y * s, x * s + y * c] as [number, number]);
+  const solidLines: string[] = [], hiddenLines: string[] = [];
+  const seg = (a: V3, b: V3, visible: boolean) => (visible ? solidLines : hiddenLines).push(`M${project(a)}L${project(b)}`);
+  const n = ring.length;
+  // A side face is visible when its outward normal faces the viewer (+x +y in this projection).
+  const faceVisible = ring.map((p, i) => {
+    const q = ring[(i + 1) % n]!; const nx = q[1] - p[1], ny = -(q[0] - p[0]);
+    return nx + ny > 0;
   });
-  el.addEventListener('pointerleave', () => { rx(0); ry(0); });
+  for (let i = 0; i < n; i++) {
+    const p = ring[i]!, q = ring[(i + 1) % n]!, prev = faceVisible[(i - 1 + n) % n]!, cur = faceVisible[i]!;
+    seg([p[0], p[1], z1], [q[0], q[1], z1], true);              // top face: always seen from above
+    seg([p[0], p[1], z0], [q[0], q[1], z0], cur);               // bottom edge
+    seg([p[0], p[1], z0], [p[0], p[1], z1], cur || prev);       // vertical edge
+  }
+  const faces = ring.map((p, i) => {
+    if (!faceVisible[i]) return '';
+    const q = ring[(i + 1) % n]!;
+    return `M${project([p[0], p[1], z0])}L${project([q[0], q[1], z0])}L${project([q[0], q[1], z1])}L${project([p[0], p[1], z1])}Z`;
+  }).join('');
+  const top = `M${ring.map(([x, y]) => project([x, y, z1])).join('L')}Z`;
+  return { solid: solidLines.join(''), hidden: hiddenLines.join(''), top, faces };
 }
+const rect = (w: number, d: number): [number, number][] => [[-w, -d], [w, -d], [w, d], [-w, d]];
+const octagon = (r: number): [number, number][] => Array.from({ length: 8 }, (_, i) => [Math.cos(i * Math.PI / 4 + Math.PI / 8) * r, Math.sin(i * Math.PI / 4 + Math.PI / 8) * r]);
 
-const canvas = document.getElementById('scene') as HTMLCanvasElement;
-let scene: HeroScene | null = null;
-// Three.js is large, so load the scene after the page text is up.
-import('./scene').then(({ createHeroScene }) => {
-  scene = createHeroScene(canvas);
-  if (!scene) root.classList.add('no-webgl');
-  else if (reduceMotion) scene.setStaticFrame();
-  else scene.setProgress(ScrollTrigger.getAll()[0]?.progress ?? 0);
-}).catch(() => root.classList.add('no-webgl'));
-
+const anvil = document.getElementById('anvil') as unknown as SVGSVGElement;
+function drawAnvil(theta: number) {
+  const parts = [
+    solid(octagon(64), 0, 14, theta),          // plinth
+    solid(rect(26, 20), 14, 52, theta),         // waist
+    solid(rect(58, 26), 52, 76, theta),         // face
+    solid(rect(14, 14), 76, 96, theta + Math.PI / 4), // the forged block on top
+  ];
+  const ground = Array.from({ length: 49 }, (_, i) => { const a = i / 48 * Math.PI * 2; return project([Math.cos(a) * 92, Math.sin(a) * 92, 0]); });
+  anvil.innerHTML = `
+    <path d="M${ground.join('L')}" stroke="var(--rule-strong)" stroke-dasharray="1 4"/>
+    <path class="dim-line" d="M-104 0V-96M-108 0H-100M-108 -96H-100" />
+    <text class="dim-text" x="-112" y="-46" transform="rotate(-90 -112 -46)" text-anchor="middle">H 96</text>
+    ${parts.map((p) => `<path d="${p.hidden}" stroke="var(--text-3)" stroke-dasharray="2 3" stroke-width=".7"/>`).join('')}
+    ${parts.map((p, i) => `<path d="${p.faces}" fill="var(--ink)" fill-opacity=".94"/><path d="${p.top}" fill="${i === 3 ? 'var(--accent)' : 'var(--sheet-2)'}" fill-opacity="${i === 3 ? '.9' : '1'}"/><path d="${p.solid}" stroke="${i === 3 ? 'var(--accent)' : 'var(--text)'}" stroke-width="1" stroke-linejoin="round"/>`).join('')}
+    <circle cx="0" cy="0" r="2" fill="var(--accent)"/>
+    <text class="dim-text" x="60" y="104">Ø 184 · PLINTH</text>`;
+}
+let theta = 0.35;
+drawAnvil(theta);
 if (!reduceMotion) {
-  document.querySelectorAll<HTMLElement>('[data-tilt]').forEach(bindTilt);
+  let last = performance.now(), visible = true;
+  new IntersectionObserver(([entry]) => { visible = !!entry?.isIntersecting; }).observe(anvil);
+  const tick = (now: number) => {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (visible && !document.hidden) { theta += dt * 0.22; drawAnvil(theta); }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
 
-  // Marquee loops run independently of scroll position.
-  const loops = [...document.querySelectorAll<HTMLElement>('.marquee-row')].map((row) => {
-    row.innerHTML += row.innerHTML; // seamless loop
-    const dir = Number(row.dataset.direction);
-    return gsap.fromTo(row, { xPercent: dir < 0 ? 0 : -50 }, { xPercent: dir < 0 ? -50 : 0, duration: 40, ease: 'none', repeat: -1 });
-  });
+/* ---------- Index: highlight the section in view ---------- */
+const links = new Map([...document.querySelectorAll<HTMLAnchorElement>('.rail-index a')].map((a) => [a.hash.slice(1), a]));
+const sectionObserver = new IntersectionObserver((entries) => {
+  for (const entry of entries) {
+    if (!entry.isIntersecting) continue;
+    links.forEach((a, id) => a.classList.toggle('is-active', id === entry.target.id));
+  }
+}, { rootMargin: '-45% 0px -50% 0px' });
+links.forEach((_, id) => { const el = document.getElementById(id); if (el) sectionObserver.observe(el); });
 
-  // Scroll triggers are created top to bottom after fonts load, so the
-  // pinned manifesto is measured before anything below it.
+const topbar = document.querySelector('.topbar')!;
+addEventListener('scroll', () => topbar.classList.toggle('is-stuck', scrollY > 8), { passive: true });
+
+/* ---------- Motion ---------- */
+if (!reduceMotion) {
+  const row = document.querySelector<HTMLElement>('.ticker-row')!;
+  row.innerHTML += row.innerHTML;
+  gsap.fromTo(row, { xPercent: 0 }, { xPercent: -50, duration: 60, ease: 'none', repeat: -1 });
+
   document.fonts.ready.then(() => {
-    const lines = SplitText.create('.hero-title .line', { type: 'words,chars', mask: 'words' });
+    const lines = SplitText.create('.hero-title .line', { type: 'words', mask: 'words' });
     root.classList.add('motion-ready');
-
-    // Hero intro: characters flip up out of a mask.
     gsap.timeline({ defaults: { ease: 'expo.out' } })
-      .from('.nav', { y: -40, autoAlpha: 0, duration: 1 })
-      .from(lines.chars, { yPercent: 120, rotationX: -90, transformOrigin: '50% 100% -20px', duration: 1.1, stagger: 0.018 }, 0.1)
-      .from('.hero .reveal', { y: 30, autoAlpha: 0, duration: 1, stagger: 0.1 }, 0.6)
-      .from('.platform', { rotationY: -90, z: -80, autoAlpha: 0, duration: 1.2, stagger: 0.15, transformPerspective: 600 }, 0.9);
+      .from('.rail-index li', { x: -16, autoAlpha: 0, stagger: 0.06, duration: 0.9 }, 0)
+      .from('#anvil', { scale: 0.86, autoAlpha: 0, duration: 1.6 }, 0)
+      .from(lines.words, { yPercent: 110, duration: 1.2, stagger: 0.05 }, 0.1)
+      .from('.hero .reveal', { y: 18, autoAlpha: 0, duration: 1, stagger: 0.1 }, 0.7)
+      .from('.cta', { y: 40, autoAlpha: 0, duration: 1 }, 0.9);
 
-    // Hero copy drifts back as you leave.
-    gsap.to('.hero', { yPercent: -18, autoAlpha: 0.15, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
-
-    // Marquee: tilts with scroll, speeds up with scroll velocity.
-    gsap.to('.marquee', { rotation: -2, ease: 'none', scrollTrigger: { trigger: '.marquee', scrub: true } });
-    ScrollTrigger.create({
-      trigger: '.marquee', start: 'top bottom', end: 'bottom top',
-      onUpdate: (self) => {
-        const boost = 1 + Math.min(Math.abs(self.getVelocity()) / 300, 6);
-        loops.forEach((t) => gsap.to(t, { timeScale: boost, duration: 0.2, overwrite: true, onComplete: () => { gsap.to(t, { timeScale: 1, duration: 1.2 }); } }));
-      },
-    });
-
-    // Dim the 3D scene behind the reading sections.
-    gsap.to(canvas, { opacity: 0.35, ease: 'none', scrollTrigger: { trigger: '.manifesto', start: 'top bottom', end: 'top top', scrub: true } });
-
-    // Manifesto: pinned, words light up as you scroll.
-    const words = SplitText.create('.scrub-text', { type: 'words' }).words;
-    gsap.timeline({ scrollTrigger: { trigger: '.manifesto', start: 'top top', end: '+=140%', scrub: 0.6, pin: true } })
-      .fromTo(words, { opacity: 0.12, filter: 'blur(4px)' }, { opacity: 1, filter: 'blur(0px)', stagger: 0.1, ease: 'none' });
-
-    // Section headings: words rise and un-tilt on enter.
-    for (const heading of document.querySelectorAll('.split-heading')) {
-      const split = SplitText.create(heading, { type: 'words', mask: 'words' });
-      gsap.from(split.words, {
-        yPercent: 110, rotationZ: 6, duration: 1, ease: 'power4.out', stagger: 0.06,
-        scrollTrigger: { trigger: heading, start: 'top 85%' },
-      });
+    for (const heading of document.querySelectorAll('.sec-title, .finale-title')) {
+      const split = SplitText.create(heading, { type: 'lines', mask: 'lines' });
+      gsap.from(split.lines, { yPercent: 105, duration: 1.1, ease: 'power4.out', stagger: 0.08, scrollTrigger: { trigger: heading, start: 'top 85%' } });
     }
-
-    // Show cards swing in like trading cards.
-    gsap.from('.show-step', {
-      y: 80, rotationY: 50, rotationZ: -4, autoAlpha: 0, transformPerspective: 1000, stagger: 0.14, ease: 'back.out(1.4)', duration: 1.1,
-      scrollTrigger: { trigger: '.show-steps', start: 'top 82%' },
-    });
-
-    // Steps fly in from depth.
-    gsap.from('.step', {
-      z: -400, rotationX: 35, rotationY: -20, autoAlpha: 0, transformPerspective: 1000, stagger: 0.12, ease: 'power3.out', duration: 1.2,
-      scrollTrigger: { trigger: '.steps', start: 'top 80%' },
-    });
-
-    // Counters
-    gsap.from('.stats > div', { y: 60, autoAlpha: 0, stagger: 0.1, duration: 1, ease: 'power3.out', scrollTrigger: { trigger: '.stats', start: 'top 85%' } });
-    for (const el of document.querySelectorAll<HTMLElement>('.count')) {
-      const target = Number(el.dataset.to), state = { v: 0 };
-      gsap.to(state, {
-        v: target, duration: 1.6, ease: 'power2.out',
-        scrollTrigger: { trigger: el, start: 'top 90%' },
-        onUpdate: () => { el.textContent = String(Math.round(state.v)); },
-      });
+    for (const group of document.querySelectorAll('.flow, .spec-table, .specimens, .cmd-list, .layers, .terminal')) {
+      gsap.from(group.querySelectorAll('[data-row]'), { y: 24, autoAlpha: 0, duration: 0.9, ease: 'power3.out', stagger: 0.07, scrollTrigger: { trigger: group, start: 'top 85%' } });
     }
-
-    // Boss cards rise with a slight swing.
-    gsap.from('.boss-card', {
-      y: 120, rotationX: -25, autoAlpha: 0, transformPerspective: 900, stagger: 0.15, duration: 1.2, ease: 'power3.out',
-      scrollTrigger: { trigger: '#boss-cards', start: 'top 85%' },
-    });
-
-    // Finale: scene returns to full strength, text grows into view.
-    gsap.to(canvas, { opacity: 1, ease: 'none', immediateRender: false, scrollTrigger: { trigger: '.finale', start: 'top bottom', end: 'center center', scrub: true } });
-    const finale = SplitText.create('.finale-title', { type: 'chars' });
-    gsap.from(finale.chars, {
-      yPercent: 60, scale: 0.4, autoAlpha: 0, rotationY: 90, stagger: 0.05, ease: 'none',
-      scrollTrigger: { trigger: '.finale', start: 'top 80%', end: 'center 60%', scrub: 0.8 },
-    });
-
-    // The 3D scene follows overall page progress (created last so 'max' includes the pin).
-    ScrollTrigger.create({ start: 0, end: 'max', onUpdate: (self) => scene?.setProgress(self.progress) });
+    for (const el of document.querySelectorAll('.sec .reveal')) {
+      gsap.from(el, { y: 18, autoAlpha: 0, duration: 1, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 88%' } });
+    }
     ScrollTrigger.refresh();
   });
 }

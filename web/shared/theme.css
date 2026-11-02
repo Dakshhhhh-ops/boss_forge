@@ -1,0 +1,102 @@
+/* Boss Forge design system: an editorial "engineering drawing" language.
+   Serif display headlines, hairline rules, numbered index lists, boxed tabs,
+   square corners and a single lime accent block. Fonts are bundled (OFL). */
+@import '@fontsource/instrument-serif/400.css';
+@import '@fontsource/instrument-serif/400-italic.css';
+@import '@fontsource-variable/inter-tight/wght.css';
+@import '@fontsource-variable/jetbrains-mono/wght.css';
+
+:root {
+  --ink: #0b0c0e;          /* page */
+  --sheet: #111215;        /* raised panel */
+  --sheet-2: #16181c;      /* inset / hover */
+  --rule: #26282e;         /* hairline */
+  --rule-strong: #3a3d45;  /* emphasized hairline */
+  --text: #ecebe5;
+  --text-2: #a3a49d;
+  --text-3: #6d6f72;
+  --accent: #cbf579;       /* the one accent block */
+  --accent-ink: #11160a;
+  --twitch: #9146ff;
+  --danger: #ff6b4a;
+  --warn: #f5c542;
+
+  --serif: 'Instrument Serif', 'Times New Roman', serif;
+  --sans: 'Inter Tight Variable', 'Inter Tight', 'Helvetica Neue', Arial, sans-serif;
+  --mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, Consolas, monospace;
+
+  --gutter: clamp(16px, 2.4vw, 32px);
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  color-scheme: dark;
+}
+
+.bf { margin: 0; background: var(--ink); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased; font-synthesis: none; }
+:where(.bf) *, :where(.bf) *::before, :where(.bf) *::after { box-sizing: border-box; }
+:where(.bf) a { color: inherit; text-decoration: none; }
+:where(.bf) :is(button, input, select, textarea) { font: inherit; color: inherit; }
+:where(.bf) :focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
+:where(.bf) ::selection { background: var(--accent); color: var(--accent-ink); }
+
+/* Type */
+.t-display { font-family: var(--serif); font-weight: 400; letter-spacing: -.02em; line-height: .98; margin: 0; }
+.t-display em { font-style: italic; color: var(--accent); }
+.t-label { font-family: var(--sans); font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); }
+.t-mono { font-family: var(--mono); font-size: 12px; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.t-num { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--text-3); }
+
+/* Hairline structure */
+.rule { border: 0; border-top: 1px solid var(--rule); margin: 0; }
+.ruled > * + * { border-top: 1px solid var(--rule); }
+.frame { position: relative; border: 1px solid var(--rule); background: var(--sheet); }
+/* Drafting corner ticks */
+.ticks { position: relative; }
+.ticks::before, .ticks::after { content: ''; position: absolute; width: 9px; height: 9px; pointer-events: none; border-color: var(--rule-strong); border-style: solid; }
+.ticks::before { top: -5px; left: -5px; border-width: 1px 0 0 1px; }
+.ticks::after { bottom: -5px; right: -5px; border-width: 0 1px 1px 0; }
+
+/* Boxed tab navigation */
+.tabs { display: inline-flex; border: 1px solid var(--rule-strong); }
+.tabs > a, .tabs > button { padding: 7px 12px; font: 500 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--text-2);
+  background: transparent; border: 0; border-left: 1px solid var(--rule-strong); transition: background .2s, color .2s; white-space: nowrap; }
+.tabs > :first-child { border-left: 0; }
+.tabs > :hover { color: var(--text); background: var(--sheet-2); }
+.tabs > [aria-current='page'], .tabs > .is-active { background: var(--text); color: var(--ink); }
+
+/* Numbered index list */
+.index { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+.index > li, .index > .row { display: grid; grid-template-columns: 40px 1fr auto; align-items: baseline; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--rule); }
+.index .n { font: 11px var(--mono); color: var(--text-3); }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 16px; border: 1px solid var(--rule-strong);
+  background: transparent; color: var(--text); font: 500 12px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
+  transition: background .25s var(--ease), color .25s var(--ease), border-color .25s; }
+.btn:hover:not(:disabled) { background: var(--text); color: var(--ink); border-color: var(--text); }
+.btn:disabled { opacity: .35; cursor: default; }
+.btn-accent { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn-accent:hover:not(:disabled) { background: #dcff98; color: var(--accent-ink); border-color: #dcff98; }
+.btn .arrow { font-family: var(--mono); transition: transform .3s var(--ease); }
+.btn:hover .arrow { transform: translate(3px, -3px); }
+
+/* Accent block (the MECHA-style call-to-action slab) */
+.block { display: flex; flex-direction: column; justify-content: space-between; min-height: 120px; padding: 18px 20px; background: var(--accent); color: var(--accent-ink); }
+.block .t-label { color: #2c3a12; }
+
+/* Chips */
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid var(--rule-strong); font: 500 10px/1.2 var(--sans); letter-spacing: .08em;
+  text-transform: uppercase; color: var(--text-2); white-space: nowrap; }
+.chip.is-live { color: var(--accent); border-color: #cbf57966; }
+.chip.is-warn { color: var(--warn); border-color: #f5c54266; }
+.chip.is-twitch { color: #c9a8ff; border-color: #9146ff80; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; }
+.dot.pulse { animation: bf-pulse 2s var(--ease) infinite; }
+@keyframes bf-pulse { 0% { box-shadow: 0 0 0 0 currentColor; } 70%, 100% { box-shadow: 0 0 0 6px transparent; } }
+
+/* Shared masthead */
+.bf-mast { display: flex; align-items: center; gap: 20px; height: 64px; padding: 0 var(--gutter); border-bottom: 1px solid var(--rule); }
+.bf-wordmark { display: inline-flex; align-items: center; gap: 10px; font: 600 15px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; }
+.bf-wordmark svg { width: 26px; height: 26px; }
+.bf-mast .tabs { margin-left: auto; }
+
+@media (prefers-reduced-motion: reduce) { .bf *, .bf *::before, .bf *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; } }
